@@ -7,6 +7,7 @@ import {
   trackScreenView,
   engagementAnalytics,
 } from "./utils/analytics";
+import { initSentry, monitorPerformance } from "./utils/errorTracking";
 import HomeView from "./views/Home";
 import WorkoutView from "./views/Workout";
 import WorkoutDetailView from "./views/WorkoutDetail";
@@ -44,7 +45,17 @@ export default function App() {
 
   // Initialize: Check Auth and Load Data
   useEffect(() => {
-    // 0. Initialize Analytics
+    // 0a. Initialize Error Tracking
+    const sentryDsn = import.meta.env.VITE_SENTRY_DSN || "";
+    if (sentryDsn) {
+      initSentry(sentryDsn, {
+        environment: import.meta.env.VITE_ENV || "production",
+        tracesSampleRate: 0.1,
+      });
+      monitorPerformance();
+    }
+
+    // 0b. Initialize Analytics
     const gaId = import.meta.env.VITE_GA_ID || "";
     if (gaId) {
       initGoogleAnalytics(gaId);
