@@ -1,0 +1,72 @@
+{
+  "name": "Vitality - Tu Entrenador IA",
+  "short_name": "Vitality",
+  "description": "Aplicación de bienestar integral con IA. Entrena, monitorea tu nutrición e hidratación.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#22c55e",
+  "background_color": "#ffffff",
+  "categories": ["health", "fitness", "wellness"],
+  "screenshots": [
+    {
+      "src": "/icon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "form_factor": "narrow"
+    },
+    {
+      "src": "/icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "wide"
+    }
+  ],
+  "icons": [
+    {
+      "src": "/icon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Entrenar",
+      "short_name": "Entrenar",
+      "description": "Comienza una sesión de entrenamiento",
+      "url": "/?screen=workout",
+      "icons": [
+        {
+          "src": "/icon.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Chat IA",
+      "short_name": "IA",
+      "description": "Habla con tu entrenador IA",
+      "url": "/?screen=chat",
+      "icons": [
+        {
+          "src": "/icon.png",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ]
+}
