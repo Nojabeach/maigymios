@@ -2,6 +2,11 @@ import { useState, useEffect } from "react";
 import { ScreenName, type UserStats } from "./types";
 import { supabase } from "./supabaseClient";
 import { initServiceWorker } from "./utils/notifications";
+import {
+  initGoogleAnalytics,
+  trackScreenView,
+  engagementAnalytics,
+} from "./utils/analytics";
 import HomeView from "./views/Home";
 import WorkoutView from "./views/Workout";
 import WorkoutDetailView from "./views/WorkoutDetail";
@@ -39,7 +44,14 @@ export default function App() {
 
   // Initialize: Check Auth and Load Data
   useEffect(() => {
-    // 0. Initialize Service Worker for notifications
+    // 0. Initialize Analytics
+    const gaId = import.meta.env.VITE_GA_ID || "";
+    if (gaId) {
+      initGoogleAnalytics(gaId);
+      engagementAnalytics.appLaunch("web");
+    }
+
+    // 1. Initialize Service Worker for notifications
     initServiceWorker().catch((err) => console.log("SW init warning:", err));
 
     // 1. LocalStorage Fast Load (Immediate UI feedback)
@@ -223,6 +235,8 @@ export default function App() {
   const navigate = (screen: ScreenName) => {
     setCurrentScreen(screen);
     window.scrollTo(0, 0);
+    // Track screen view for analytics
+    trackScreenView(screen);
   };
 
   const updateHydration = (amount: number) => {
