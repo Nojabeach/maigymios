@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { ScreenName, type UserStats } from "./types";
 import { supabase } from "./supabaseClient";
+import { initServiceWorker } from "./utils/notifications";
 import HomeView from "./views/Home";
 import WorkoutView from "./views/Workout";
 import WorkoutDetailView from "./views/WorkoutDetail";
@@ -38,6 +39,9 @@ export default function App() {
 
   // Initialize: Check Auth and Load Data
   useEffect(() => {
+    // 0. Initialize Service Worker for notifications
+    initServiceWorker().catch((err) => console.log("SW init warning:", err));
+
     // 1. LocalStorage Fast Load (Immediate UI feedback)
     const savedStats = localStorage.getItem("vitality_user_stats");
     if (savedStats) {
