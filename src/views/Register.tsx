@@ -103,13 +103,21 @@ const RegisterView: React.FC<RegisterProps> = ({ onLogin, navigate }) => {
         </button>
       </form>
 
-      <div className="mt-12 text-center relative z-10">
+      <div className="mt-12 text-center relative z-10 flex flex-col gap-6">
         <p className="text-xs font-bold text-slate-400 uppercase tracking-widest leading-loose">
           ¿Ya tienes cuenta? <br />
           <button onClick={() => navigate(ScreenName.LOGIN)} className="text-slate-900 dark:text-white font-black hover:text-primary-500 transition-colors mt-2 text-sm">
             Inicia sesión aquí
           </button>
         </p>
+
+        <button
+          onClick={() => navigate(ScreenName.ONBOARDING)}
+          className="flex items-center justify-center gap-2 text-[10px] font-black text-slate-300 uppercase tracking-[0.2em] hover:text-primary-500 transition-colors"
+        >
+          <span className="material-symbols-outlined text-sm">auto_awesome</span>
+          Ver Presentación
+        </button>
       </div>
     </div>
   );
