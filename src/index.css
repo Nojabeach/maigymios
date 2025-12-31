@@ -101,7 +101,7 @@
 /* Animations custom */
 @keyframes slideUp {
   from {
-    transform: translateY(20px);
+    transform: translateY(40px);
     opacity: 0;
   }
 
@@ -111,8 +111,22 @@
   }
 }
 
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
 .animate-slide-up {
-  animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: slideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-fade-in {
+  animation: fadeIn 1s ease-out forwards;
 }
 
 /* Global improvements for cards */
