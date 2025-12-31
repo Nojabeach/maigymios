@@ -17,10 +17,20 @@ const LoginView: React.FC<LoginProps> = ({ onLogin, navigate }) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const cleanEmail = email.trim();
+
+    if (!cleanEmail || !password) {
+      setError('Por favor, completa todos los campos.');
+      return;
+    }
+
     setLoading(true);
     setError('');
     try {
-      const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
+        email: cleanEmail,
+        password
+      });
       if (authError) throw authError;
       if (data.session) onLogin();
     } catch (err: any) {

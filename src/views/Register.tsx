@@ -16,12 +16,36 @@ const RegisterView: React.FC<RegisterProps> = ({ onLogin, navigate }) => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
 
+  const validateInput = () => {
+    const trimmedEmail = email.trim();
+    // Strict email regex
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
+    if (!emailRegex.test(trimmedEmail)) {
+      setError('Por favor, introduce un correo electrónico válido.');
+      return false;
+    }
+
+    if (password.length < 8) {
+      setError('La contraseña debe tener al menos 8 caracteres para tu seguridad.');
+      return false;
+    }
+
+    return true;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     setError('');
+
+    if (!validateInput()) return;
+
+    setLoading(true);
     try {
-      const { data, error: authError } = await supabase.auth.signUp({ email, password });
+      const { data, error: authError } = await supabase.auth.signUp({
+        email: email.trim(),
+        password
+      });
       if (authError) throw authError;
 
       if (data.session) {
@@ -106,8 +130,9 @@ const RegisterView: React.FC<RegisterProps> = ({ onLogin, navigate }) => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full bg-slate-50 dark:bg-slate-900 border-none rounded-[1.5rem] py-5 pl-14 pr-6 text-slate-900 dark:text-white font-bold outline-none ring-2 ring-transparent focus:ring-primary-500/30 transition-all placeholder:text-slate-300"
-              placeholder="Mínimo 6 caracteres"
+              placeholder="Mínimo 8 caracteres (Seguro)"
             />
+
           </div>
         </div>
 
