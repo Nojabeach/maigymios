@@ -59,7 +59,7 @@ const NutritionView: React.FC<NutritionProps> = ({ navigate, user }) => {
   };
 
   const totalCals = meals.reduce((acc, m) => acc + (m.calories || 0), 0);
-  const targetCals = 1800;
+  const targetCals = user?.user_metadata?.daily_calorie_target || 1800;
   const calPercentage = Math.min(100, Math.round((totalCals / targetCals) * 100));
 
   return (

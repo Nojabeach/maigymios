@@ -7,47 +7,33 @@ interface WorkoutProps {
   navigate: (screen: ScreenName) => void;
 }
 
-const EXERCISES = [
-  {
-    id: 'squats',
-    name: 'Sentadillas Asistidas',
-    description: 'Usa una silla para equilibrio.',
-    tags: ['Piernas'],
-    sets: '3 x 10 rep',
-    image: IMAGES.EXERCISE_SQUAT
-  },
-  {
-    id: 'pushups',
-    name: 'Flexiones en Pared',
-    description: 'Pecho y brazos sin impacto.',
-    tags: ['Brazos'],
-    sets: '3 x 8 rep',
-    image: IMAGES.EXERCISE_PUSHUP
-  },
-  {
-    id: 'lunges',
-    name: 'Zancadas Alternas',
-    description: 'Fortalece piernas y glúteos.',
-    tags: ['Piernas'],
-    sets: '3 x 10 rep',
-    image: IMAGES.WORKOUT_YOGA
-  },
-  {
-    id: 'plank',
-    name: 'Plancha Abdominal',
-    description: 'Fortalece el core.',
-    tags: ['Core'],
-    sets: '3 x 30 seg',
-    image: IMAGES.WORKOUT_HEADER
-  }
-];
-
 const WorkoutView: React.FC<WorkoutProps> = ({ navigate }) => {
   const [completedExercises, setCompletedExercises] = useState<Set<string>>(new Set());
+  const [exercises, setExercises] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    loadExercises();
     fetchCompletedWorkouts();
   }, []);
+
+  const loadExercises = async () => {
+    try {
+      const { data } = await supabase
+        .from('exercises')
+        .select('*')
+        .eq('is_active', true)
+        .order('display_order', { ascending: true });
+
+      if (data) {
+        setExercises(data);
+      }
+    } catch (error) {
+      console.error('Error loading exercises:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchCompletedWorkouts = async () => {
     try {
@@ -69,7 +55,8 @@ const WorkoutView: React.FC<WorkoutProps> = ({ navigate }) => {
     }
   };
 
-  const toggleExercise = async (exercise: typeof EXERCISES[0]) => {
+  const toggleExercise = async (exercise: any) => {
+
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
@@ -133,54 +120,68 @@ const WorkoutView: React.FC<WorkoutProps> = ({ navigate }) => {
         <section className="flex flex-col gap-4">
           <div className="flex justify-between items-center px-1 mb-2">
             <h3 className="text-xl font-black text-slate-900 dark:text-white">Rutina del Día</h3>
-            <span className="text-xs font-black text-slate-400 uppercase tracking-widest">{EXERCISES.length} Pasos</span>
+            <span className="text-xs font-black text-slate-400 uppercase tracking-widest">{exercises.length} Pasos</span>
+
           </div>
 
           <div className="flex flex-col gap-4">
-            {EXERCISES.map((ex, i) => {
-              const isCompleted = completedExercises.has(ex.name);
-              return (
-                <div
-                  key={ex.id}
-                  className={`card-premium p-4 flex items-center gap-4 group transition-all ${isCompleted ? 'opacity-60 bg-slate-50 border-none shadow-none' : ''}`}
-                  style={{ animationDelay: `${i * 0.1}s` }}
-                >
-                  <div className="relative w-24 h-24 rounded-2xl overflow-hidden bg-slate-100">
-                    <img src={ex.image} className="w-full h-full object-cover" alt={ex.name} />
-                    {!isCompleted && (
-                      <div className="absolute inset-0 bg-slate-950/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                        <span className="material-symbols-outlined text-white text-3xl">play_circle</span>
-                      </div>
-                    )}
-                  </div>
+            {loading ? (
+              <div className="card-premium py-12 flex flex-col items-center">
+                <span className="material-symbols-outlined animate-spin text-4xl text-primary-500 mb-2">progress_activity</span>
+                <p className="text-sm font-bold text-slate-400">Cargando ejercicios...</p>
+              </div>
+            ) : exercises.length === 0 ? (
+              <div className="card-premium py-12 flex flex-col items-center opacity-50">
+                <span className="material-symbols-outlined text-4xl mb-2">fitness_center</span>
+                <p className="text-sm font-bold">No hay ejercicios disponibles</p>
+              </div>
+            ) : (
+              exercises.map((ex: any, i: number) => {
 
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-[10px] font-black text-primary-500 uppercase tracking-tighter bg-primary-50 dark:bg-primary-900/20 px-2 py-0.5 rounded-md">
-                        {ex.tags[0]}
-                      </span>
-                      <span className="text-xs font-bold text-slate-400">{ex.sets}</span>
-                    </div>
-                    <h4 className="font-black text-slate-900 dark:text-white truncate">{ex.name}</h4>
-                    <p className="text-xs text-slate-400 font-medium line-clamp-1 mt-0.5">{ex.description}</p>
-                  </div>
-
-                  <button
-                    onClick={() => toggleExercise(ex)}
-                    className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all ${isCompleted ? 'bg-primary-500 text-white' : 'bg-slate-50 dark:bg-slate-800 text-slate-300'}`}
+                const isCompleted = completedExercises.has(ex.name);
+                return (
+                  <div
+                    key={ex.id}
+                    className={`card-premium p-4 flex items-center gap-4 group transition-all ${isCompleted ? 'opacity-60 bg-slate-50 border-none shadow-none' : ''}`}
+                    style={{ animationDelay: `${i * 0.1}s` }}
                   >
-                    <span className="material-symbols-outlined filled">{isCompleted ? 'check_circle' : 'circle'}</span>
-                  </button>
-                </div>
-              )
-            })}
+                    <div className="relative w-24 h-24 rounded-2xl overflow-hidden bg-slate-100">
+                      <img src={ex.image_url || '/assets/workout-header.jpg'} className="w-full h-full object-cover" alt={ex.name} />
+                      {!isCompleted && (
+                        <div className="absolute inset-0 bg-slate-950/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                          <span className="material-symbols-outlined text-white text-3xl">play_circle</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-[10px] font-black text-primary-500 uppercase tracking-tighter bg-primary-50 dark:bg-primary-900/20 px-2 py-0.5 rounded-md">
+                          {ex.category}
+                        </span>
+                        <span className="text-xs font-bold text-slate-400">{ex.sets_reps}</span>
+                      </div>
+                      <h4 className="font-black text-slate-900 dark:text-white truncate">{ex.name}</h4>
+                      <p className="text-xs text-slate-400 font-medium line-clamp-1 mt-0.5">{ex.description}</p>
+                    </div>
+
+                    <button
+                      onClick={() => toggleExercise(ex)}
+                      className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all ${isCompleted ? 'bg-primary-500 text-white' : 'bg-slate-50 dark:bg-slate-800 text-slate-300'}`}
+                    >
+                      <span className="material-symbols-outlined filled">{isCompleted ? 'check_circle' : 'circle'}</span>
+                    </button>
+                  </div>
+                )
+              })
+            )}
           </div>
         </section>
 
         {/* Motivation Card */}
         <section className="card-premium bg-slate-950 text-white p-6 relative overflow-hidden">
           <div className="relative z-10">
-            <h4 className="font-black text-lg mb-2">¡Sigue así, Maria!</h4>
+            <h4 className="font-black text-lg mb-2">¡Sigue así!</h4>
             <p className="text-sm text-slate-400 leading-relaxed mb-4">Has completado el 75% de tus entrenamientos semanales. Estás a muy poco de tu mejor racha.</p>
             <button className="text-primary-500 font-black text-xs uppercase tracking-widest flex items-center gap-2">
               Ver progreso semanal <span className="material-symbols-outlined text-sm">arrow_forward</span>
