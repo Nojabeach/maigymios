@@ -103,7 +103,7 @@ const LoginView: React.FC<LoginProps> = ({ onLogin, navigate }) => {
       <div className="mt-12 text-center relative z-10">
         <p className="text-xs font-bold text-slate-400 uppercase tracking-widest leading-loose">
           ¿Aún no eres parte? <br />
-          <button onClick={() => navigate(ScreenName.REGISTER)} className="text-slate-900 dark:text-white font-black underline decoration-primary-500 decoration-4 underline-offset-4 mt-2">
+          <button onClick={() => navigate(ScreenName.REGISTER)} className="text-slate-900 dark:text-white font-black hover:text-primary-500 transition-colors mt-2 text-sm">
             Crea tu cuenta gratis
           </button>
         </p>

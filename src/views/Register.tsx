@@ -90,7 +90,7 @@ const RegisterView: React.FC<RegisterProps> = ({ onLogin, navigate }) => {
         <button
           type="submit"
           disabled={loading}
-          className="mt-6 w-full bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-950 font-black text-lg py-5 rounded-[2rem] shadow-2xl active:scale-[0.98] disabled:opacity-70 flex justify-center items-center gap-3"
+          className="mt-6 w-full bg-primary-500 text-white font-black text-lg py-5 rounded-[2rem] shadow-xl shadow-primary-500/20 active:scale-[0.98] disabled:opacity-70 flex justify-center items-center gap-3"
         >
           {loading ? (
             <span className="material-symbols-outlined animate-spin">progress_activity</span>
@@ -106,7 +106,7 @@ const RegisterView: React.FC<RegisterProps> = ({ onLogin, navigate }) => {
       <div className="mt-12 text-center relative z-10">
         <p className="text-xs font-bold text-slate-400 uppercase tracking-widest leading-loose">
           ¿Ya tienes cuenta? <br />
-          <button onClick={() => navigate(ScreenName.LOGIN)} className="text-slate-900 dark:text-white font-black underline decoration-primary-500 decoration-4 underline-offset-4 mt-2">
+          <button onClick={() => navigate(ScreenName.LOGIN)} className="text-slate-900 dark:text-white font-black hover:text-primary-500 transition-colors mt-2 text-sm">
             Inicia sesión aquí
           </button>
         </p>
