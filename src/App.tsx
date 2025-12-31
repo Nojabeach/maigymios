@@ -15,6 +15,7 @@ import NutritionView from "./views/Nutrition";
 import HydrationView from "./views/Hydration";
 import FastingView from "./views/Fasting";
 import ProfileView from "./views/Profile";
+import HealthView from "./views/Health";
 import ChatView from "./views/Chat";
 import OnboardingView from "./views/Onboarding";
 import SettingsView from "./views/Settings";
@@ -311,6 +312,13 @@ export default function App() {
             onLogout={handleLogout}
           />
         );
+      case ScreenName.HEALTH:
+        return (
+          <HealthView
+            navigate={navigate}
+            toggleDarkMode={() => setDarkMode(!darkMode)}
+          />
+        );
       case ScreenName.SETTINGS:
         return <SettingsView navigate={navigate} />;
       case ScreenName.CHAT:
@@ -324,6 +332,7 @@ export default function App() {
     ScreenName.WORKOUT_DETAIL,
     ScreenName.CHAT,
     ScreenName.SETTINGS,
+    ScreenName.HEALTH,
   ].includes(currentScreen as any);
 
   return (

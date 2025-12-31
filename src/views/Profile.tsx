@@ -243,6 +243,15 @@ const ProfileView: React.FC<ProfileProps> = ({
           </div>
         </section>
 
+        {/* Health Center Button */}
+        <button
+          onClick={() => navigate(ScreenName.HEALTH)}
+          className="w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-green-500/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+        >
+          <span>🏥</span>
+          <span>Centro de Salud (Apple Health)</span>
+        </button>
+
         <button
           className="w-full bg-surface-light dark:bg-surface-dark text-red-500 font-bold py-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 mt-4 active:scale-[0.98] transition-transform hover:bg-red-50 dark:hover:bg-red-900/10"
           onClick={onLogout}
