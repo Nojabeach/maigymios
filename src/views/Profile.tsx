@@ -252,6 +252,15 @@ const ProfileView: React.FC<ProfileProps> = ({
           <span>Centro de Salud (Apple Health)</span>
         </button>
 
+        {/* Challenges Button */}
+        <button
+          onClick={() => navigate(ScreenName.CHALLENGES)}
+          className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-purple-500/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2 mt-3"
+        >
+          <span>🏆</span>
+          <span>Retos & Competencias</span>
+        </button>
+
         <button
           className="w-full bg-surface-light dark:bg-surface-dark text-red-500 font-bold py-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 mt-4 active:scale-[0.98] transition-transform hover:bg-red-50 dark:hover:bg-red-900/10"
           onClick={onLogout}

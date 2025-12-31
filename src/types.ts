@@ -11,6 +11,7 @@ export const ScreenName = {
   FASTING: "FASTING",
   PROFILE: "PROFILE",
   HEALTH: "HEALTH",
+  CHALLENGES: "CHALLENGES",
   CHAT: "CHAT",
   SETTINGS: "SETTINGS",
 } as const;
