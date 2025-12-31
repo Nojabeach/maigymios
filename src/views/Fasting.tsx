@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { ScreenName } from "../types";
 import { supabase } from "../supabaseClient";
 
@@ -9,234 +9,174 @@ interface FastingProps {
 const FastingView: React.FC<FastingProps> = ({ navigate }) => {
   const [activeSession, setActiveSession] = useState<any>(null);
   const [elapsed, setElapsed] = useState({ h: 0, m: 0, s: 0 });
+  const [targetHours] = useState(16);
 
-  // Load active session
   useEffect(() => {
-    const loadSession = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data } = await supabase
-        .from("fasting_sessions")
-        .select("*")
-        .eq("user_id", user.id)
-        .is("end_time", null)
-        .order("start_time", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (data) {
-        setActiveSession(data);
-      }
-    };
     loadSession();
   }, []);
 
-  // Timer interval
   useEffect(() => {
     let interval: any;
     if (activeSession) {
-      const updateTimer = () => {
+      const update = () => {
         const start = new Date(activeSession.start_time).getTime();
-        const now = new Date().getTime();
-        const diff = now - start;
-
-        const h = Math.floor(diff / (1000 * 60 * 60));
-        const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-        const s = Math.floor((diff % (1000 * 60)) / 1000);
-
-        setElapsed({ h, m, s });
+        const now = Date.now();
+        const diff = Math.max(0, now - start);
+        setElapsed({
+          h: Math.floor(diff / 3600000),
+          m: Math.floor((diff % 3600000) / 60000),
+          s: Math.floor((diff % 60000) / 1000),
+        });
       };
-
-      updateTimer();
-      interval = setInterval(updateTimer, 1000);
+      update();
+      interval = setInterval(update, 1000);
     } else {
       setElapsed({ h: 0, m: 0, s: 0 });
     }
     return () => clearInterval(interval);
   }, [activeSession]);
 
-  const handleEndFasting = async () => {
-    if (!activeSession) return;
-
-    const now = new Date().toISOString();
-    const { error } = await supabase
-      .from("fasting_sessions")
-      .update({ end_time: now })
-      .eq("id", activeSession.id);
-
-    if (!error) {
-      setActiveSession(null);
-      // Optional: Refresh summary or logs
-    }
-  };
-
-  const handleStartFasting = async () => {
+  const loadSession = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
     const { data } = await supabase
       .from("fasting_sessions")
+      .select("*")
+      .eq("user_id", user.id)
+      .is("end_time", null)
+      .order("start_time", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (data) {
+      setActiveSession(data);
+    }
+  };
+
+  const startFasting = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from("fasting_sessions")
       .insert({
         user_id: user.id,
         start_time: new Date().toISOString(),
-        protocol: "16:8" // Default protocol
+        protocol: "16:8",
       })
       .select()
       .single();
 
-    if (data) setActiveSession(data);
+    if (!error && data) {
+      setActiveSession(data);
+    }
   };
 
+  const stopFasting = async () => {
+    if (!activeSession) return;
+    const { error } = await supabase
+      .from("fasting_sessions")
+      .update({ end_time: new Date().toISOString() })
+      .eq("id", activeSession.id);
+
+    if (!error) {
+      setActiveSession(null);
+    }
+  };
+
+  const progressPercent = Math.min(100, Math.round(((elapsed.h + elapsed.m / 60) / targetHours) * 100));
+
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex items-center p-4 pb-2 justify-between sticky top-0 z-10 bg-background-light/95 dark:bg-background-dark/95 backdrop-blur-sm">
-        <div
-          className="flex items-center gap-2 cursor-pointer"
-          onClick={() => navigate(ScreenName.HOME)}
-        >
-          <span className="material-symbols-outlined text-text-main dark:text-white">
-            arrow_back
-          </span>
-          <div className="flex flex-col">
-            <h2 className="text-lg font-bold leading-tight tracking-[-0.015em]">
-              Control de Ayuno
-            </h2>
-            <span className="text-xs font-medium text-text-sub dark:text-gray-400">
-              {new Date().toLocaleDateString("es-ES", { day: 'numeric', month: 'short' })}
-            </span>
-          </div>
-        </div>
-        <div className="flex gap-3">
-          <button className="flex items-center justify-center rounded-full h-10 w-10 bg-surface-light dark:bg-surface-dark text-text-main dark:text-white shadow-sm">
-            <span className="material-symbols-outlined">settings</span>
-          </button>
-        </div>
-      </div>
-
-      <div className="flex-1 overflow-y-auto pb-20">
-        <div className="px-4 py-2 flex justify-center">
-          <div className="inline-flex items-center gap-2 bg-surface-light dark:bg-surface-dark px-4 py-2 rounded-full shadow-sm border border-gray-100 dark:border-gray-800 cursor-pointer">
-            <span className="material-symbols-outlined text-primary text-sm">
-              bolt
-            </span>
-            <span className="text-sm font-bold">Protocolo {activeSession?.protocol || "16:8"}</span>
-            <span className="material-symbols-outlined text-text-sub text-sm">
-              expand_more
-            </span>
-          </div>
-        </div>
-
-        {/* Circular Timer Dial */}
-        <div className="flex flex-col items-center justify-center py-6 px-4">
-          <div
-            className="relative w-64 h-64 rounded-full flex items-center justify-center shadow-lg transition-all duration-500"
-            style={{ background: activeSession ? "conic-gradient(#22c55e 85%, #dbe6db 0deg)" : "bg-gray-200" }}
+    <div className="flex-1 bg-white dark:bg-slate-950 flex flex-col min-h-screen">
+      {/* Header */}
+      <header className="sticky top-0 z-40 bg-white/70 dark:bg-slate-950/70 backdrop-blur-xl border-b border-slate-100 dark:border-slate-800/50 px-6 py-4 flex items-center justify-between safe-top">
+        <div className="flex items-center gap-3">
+          <button
+            className="p-2 rounded-2xl bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 active:scale-90 transition-all"
+            onClick={() => navigate(ScreenName.HOME)}
           >
-            <div className="absolute w-[90%] h-[90%] bg-background-light dark:bg-background-dark rounded-full flex flex-col items-center justify-center z-10 shadow-inner">
-              <div className="text-center mb-2">
-                <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide ${activeSession ? "bg-primary/10 text-green-700 dark:text-primary" : "bg-gray-100 text-gray-500"}`}>
-                  {activeSession ? "Ayunando" : "Sin Ayuno"}
-                </span>
-              </div>
-              <div className="flex items-baseline gap-1 text-text-main dark:text-white">
-                <div className="flex flex-col items-center">
-                  <span className="text-5xl font-bold tracking-tighter leading-none">
-                    {elapsed.h}
-                  </span>
-                  <span className="text-xs text-text-sub dark:text-gray-400 font-medium mt-1">
-                    h
-                  </span>
-                </div>
-                <span className="text-4xl font-bold text-text-sub/30 pb-4">
-                  :
-                </span>
-                <div className="flex flex-col items-center">
-                  <span className="text-5xl font-bold tracking-tighter leading-none">
-                    {elapsed.m.toString().padStart(2, '0')}
-                  </span>
-                  <span className="text-xs text-text-sub dark:text-gray-400 font-medium mt-1">
-                    m
-                  </span>
-                </div>
-                <span className="text-4xl font-bold text-text-sub/30 pb-4">
-                  :
-                </span>
-                <div className="flex flex-col items-center">
-                  <span className="text-5xl font-bold tracking-tighter leading-none text-text-sub dark:text-gray-400">
-                    {elapsed.s.toString().padStart(2, '0')}
-                  </span>
-                  <span className="text-xs text-text-sub dark:text-gray-400 font-medium mt-1">
-                    s
-                  </span>
-                </div>
-              </div>
-              <p className="mt-3 text-sm text-text-sub dark:text-gray-400">
-                {activeSession ? "Meta: 16:00 h" : "Listo para empezar"}
-              </p>
-            </div>
-          </div>
+            <span className="material-symbols-outlined">arrow_back</span>
+          </button>
+          <h1 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">Ayuno</h1>
+        </div>
+        <button className="p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+          <span className="material-symbols-outlined">timeline</span>
+        </button>
+      </header>
+
+      <div className="flex-1 flex flex-col items-center justify-start p-6 pb-24 w-full max-w-lg mx-auto gap-10">
+
+        {/* Protocol Selector - Premium Pill */}
+        <div className="bg-slate-50 dark:bg-slate-900/50 p-1 rounded-3xl flex gap-1 border border-slate-100 dark:border-slate-800">
+          {["16:8", "18:6", "20:4"].map(p => (
+            <button key={p} className={`px-6 py-2 rounded-2xl text-xs font-black transition-all ${p === "16:8" ? "bg-white dark:bg-slate-800 shadow-md text-slate-900 dark:text-white" : "text-slate-400"}`}>
+              {p}
+            </button>
+          ))}
         </div>
 
-        <div className="px-6 pb-6">
+        {/* Huge Timer View */}
+        <section className="flex flex-col items-center gap-4 relative">
+          <div className="relative size-80 flex items-center justify-center">
+            <svg className="absolute size-full -rotate-90 transform" viewBox="0 0 100 100">
+              <circle className="text-slate-100 dark:text-slate-900" cx="50" cy="50" r="46" fill="transparent" stroke="currentColor" strokeWidth="8"></circle>
+              <circle
+                className={`${activeSession ? "text-primary-500" : "text-slate-300"} transition-all duration-1000 ease-out`}
+                cx="50" cy="50" r="46" fill="transparent" stroke="currentColor" strokeDasharray="289"
+                strokeDashoffset={289 - (activeSession ? (progressPercent / 100) * 289 : 0)}
+                strokeLinecap="round" strokeWidth="8"
+              ></circle>
+            </svg>
+
+            <div className="flex flex-col items-center text-center z-10">
+              <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">{activeSession ? "Tiempo transcurrido" : "Listo para empezar"}</p>
+              <div className="text-6xl font-black text-slate-900 dark:text-white tabular-nums tracking-tighter">
+                {String(elapsed.h).padStart(2, '0')}<span className="text-primary-500 opacity-50 px-1">:</span>{String(elapsed.m).padStart(2, '0')}
+              </div>
+              <div className="text-xl font-bold text-slate-400 tabular-nums mt-1 opacity-50">
+                {String(elapsed.s).padStart(2, '0')}
+              </div>
+            </div>
+
+            {activeSession && (
+              <div className="absolute inset-0 bg-primary-500/5 rounded-full blur-[90px] -z-10 animate-pulse"></div>
+            )}
+          </div>
+        </section>
+
+        {/* Progress & Target Card */}
+        <section className="card-premium w-full p-6 bg-slate-50/50 dark:bg-slate-900/50 border-dashed border-2 flex justify-between items-center group">
+          <div>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Meta Hoy</p>
+            <h4 className="text-lg font-black text-slate-900 dark:text-white">Protocolo {activeSession?.protocol || "16:8"}</h4>
+          </div>
+          <div className="text-right">
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Progreso</p>
+            <h4 className="text-lg font-black text-primary-500">{progressPercent}%</h4>
+          </div>
+        </section>
+
+        {/* Control Button */}
+        <div className="w-full mt-auto">
           {activeSession ? (
             <button
-              onClick={handleEndFasting}
-              className="w-full flex cursor-pointer items-center justify-center overflow-hidden rounded-xl h-14 bg-primary hover:bg-primary-dark transition-colors text-[#111811] text-lg font-bold leading-normal tracking-wide shadow-lg shadow-primary/30"
+              onClick={stopFasting}
+              className="w-full py-6 rounded-[2.5rem] bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 font-extrabold text-xl shadow-2xl active:scale-95 transition-all flex items-center justify-center gap-3"
             >
-              <span className="mr-2 material-symbols-outlined">restaurant</span>
-              <span>Terminar Ayuno</span>
+              <span className="material-symbols-outlined filled">stop_circle</span>
+              Finalizar Ayuno
             </button>
           ) : (
             <button
-              onClick={handleStartFasting}
-              className="w-full flex cursor-pointer items-center justify-center overflow-hidden rounded-xl h-14 bg-black dark:bg-white dark:text-black hover:bg-gray-800 transition-colors text-white text-lg font-bold leading-normal tracking-wide shadow-lg"
+              onClick={startFasting}
+              className="w-full py-6 rounded-[2.5rem] bg-primary-500 text-white font-extrabold text-xl shadow-2xl active:scale-95 transition-all flex items-center justify-center gap-3 shadow-primary-500/40"
             >
-              <span className="mr-2 material-symbols-outlined">play_arrow</span>
-              <span>Empezar Ayuno</span>
+              <span className="material-symbols-outlined filled">play_circle</span>
+              Iniciar Ayuno
             </button>
           )}
-
-          {activeSession && (
-            <div className="flex justify-center mt-3">
-              <button className="text-sm text-text-sub dark:text-gray-400 font-medium underline decoration-dashed underline-offset-4 hover:text-primary transition-colors">
-                Editar hora de inicio
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Weekly Graph */}
-        <div className="px-4 py-2">
-          <div className="bg-surface-light dark:bg-surface-dark rounded-2xl p-5 border border-gray-100 dark:border-gray-800 shadow-sm">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="font-bold text-base">Esta semana</h3>
-              {/* Placeholder logic for graph */}
-              <span className="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded text-text-sub dark:text-gray-400">
-                Promedio: -- h
-              </span>
-            </div>
-            <div className="flex items-end justify-between gap-2 h-32 w-full">
-              {/* Bars placeholder */}
-              {["L", "M", "X", "J", "V", "S", "D"].map((day) => (
-                <div
-                  key={day}
-                  className="flex flex-col items-center gap-2 group w-full"
-                >
-                  <div
-                    className="relative w-full bg-gray-100 dark:bg-gray-800 rounded-t-md transition-all"
-                    style={{
-                      height: "10%",
-                    }}
-                  ></div>
-                  <span className="text-xs font-medium text-text-sub dark:text-gray-400">
-                    {day}
-                  </span>
-                </div>
-              ))}
-            </div>
-            <p className="text-xs text-center mt-2 text-gray-400">Historial no disponible</p>
-          </div>
+          <p className="text-center text-xs font-bold text-slate-400 mt-6 px-4">Recuerda mantenerte hidratado y escuchar a tu cuerpo durante el periodo de ayuno.</p>
         </div>
       </div>
     </div>

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { ScreenName } from "../types";
 import { IMAGES } from "../constants";
 import {
@@ -6,6 +6,7 @@ import {
   CaloriesChart,
   HydrationChart,
 } from "../components/Charts";
+import { supabase } from "../supabaseClient";
 
 interface ProfileProps {
   navigate: (screen: ScreenName) => void;
@@ -14,9 +15,6 @@ interface ProfileProps {
   /* eslint-disable @typescript-eslint/no-explicit-any */
   user: any;
 }
-
-import { supabase } from "../supabaseClient";
-import { useEffect } from "react";
 
 const ProfileView: React.FC<ProfileProps> = ({
   navigate,
@@ -41,13 +39,12 @@ const ProfileView: React.FC<ProfileProps> = ({
         .order("date", { ascending: true });
 
       if (stats) {
-        // Map stats to chart format
         const mapData = (key: string) => stats.map(s => ({
           date: new Date(s.date).toLocaleDateString("es-ES", { weekday: "short" }),
           value: s[key] || 0
         }));
 
-        setWeeklyProgressData(mapData("activity_minutes")); // Assuming progress = activity for now
+        setWeeklyProgressData(mapData("activity_minutes"));
         setCaloriesData(mapData("calories"));
         setHydrationData(mapData("hydration_liters"));
       }
@@ -55,299 +52,169 @@ const ProfileView: React.FC<ProfileProps> = ({
     loadCharts();
   }, [user?.id]);
 
-
-
   return (
-    <div className="relative flex h-full flex-col bg-surface-light dark:bg-background-dark">
-      {/* Header */}
-      <div className="sticky top-0 z-40 flex items-center bg-surface-light/95 dark:bg-background-dark/95 backdrop-blur-sm p-4 pb-2 justify-between border-b border-gray-100 dark:border-gray-800">
+    <div className="flex-1 bg-white dark:bg-slate-950 flex flex-col min-h-screen">
+      {/* Header - Glassmorphism */}
+      <header className="sticky top-0 z-40 bg-white/70 dark:bg-slate-950/70 backdrop-blur-xl border-b border-slate-100 dark:border-slate-800/50 px-6 py-4 flex items-center justify-between safe-top">
+        <div className="flex items-center gap-3">
+          <button
+            className="p-2 rounded-2xl bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 active:scale-90 transition-all"
+            onClick={() => navigate(ScreenName.HOME)}
+          >
+            <span className="material-symbols-outlined">arrow_back</span>
+          </button>
+          <h1 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">Mi Perfil</h1>
+        </div>
         <button
-          className="flex size-10 shrink-0 items-center justify-center rounded-full active:bg-gray-100 dark:active:bg-gray-800 transition-colors"
-          onClick={() => navigate(ScreenName.HOME)}
-        >
-          <span className="material-symbols-outlined text-text-main dark:text-white">
-            arrow_back
-          </span>
-        </button>
-        <h2 className="text-text-main dark:text-white text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center">
-          Mi Perfil
-        </h2>
-        <button
-          className="flex h-10 px-3 items-center justify-center rounded-full hover:bg-primary/10 active:bg-primary/20 transition-colors"
           onClick={toggleDarkMode}
+          className="p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800 text-primary-500 shadow-sm"
         >
-          <span className="material-symbols-outlined text-primary-dark dark:text-primary">
-            dark_mode
-          </span>
+          <span className="material-symbols-outlined filled">dark_mode</span>
         </button>
-      </div>
+      </header>
 
-      {/* Main Content */}
-      <div className="flex p-4 flex-col gap-4 items-center">
-        <div className="flex gap-4 flex-col items-center">
-          <div className="relative group cursor-pointer transition-transform active:scale-95">
+      <div className="flex flex-col gap-8 p-6 pb-24 animate-fade-in w-full max-w-lg mx-auto overflow-y-auto">
+        {/* User Info Section */}
+        <section className="flex flex-col items-center pt-4">
+          <div className="relative mb-6">
             <div
-              className="bg-center bg-no-repeat aspect-square bg-cover rounded-full h-32 w-32 shadow-lg ring-4 ring-white dark:ring-surface-dark"
+              className="w-32 h-32 rounded-full bg-center bg-cover border-4 border-white dark:border-slate-900 shadow-2xl ring-4 ring-primary-500/20"
               style={{ backgroundImage: `url("${IMAGES.USER_AVATAR}")` }}
             ></div>
-            <div className="absolute bottom-0 right-0 bg-primary p-2 rounded-full border-4 border-white dark:border-background-dark flex items-center justify-center shadow-sm">
-              <span className="material-symbols-outlined text-black text-[18px]">
-                edit
-              </span>
-            </div>
-          </div>
-          <div className="flex flex-col items-center justify-center gap-1">
-            <h1 className="text-text-main dark:text-white text-2xl font-bold leading-tight text-center">
-              Maria González
-            </h1>
-            <div className="flex items-center gap-2 mt-1">
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/20 text-green-800 dark:text-green-100">
-                Miembro Activo
-              </span>
-              <p className="text-text-sub dark:text-gray-400 text-sm font-normal text-center">
-                Unida en 2023
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="flex flex-col px-4 gap-6 pb-24">
-        <section className="animate-fade-in">
-          <div className="flex items-center justify-between pb-3">
-            <h3 className="text-text-main dark:text-white text-lg font-bold leading-tight">
-              Métricas Corporales
-            </h3>
-            <button
-              onClick={() => setShowHistory(true)}
-              className="text-primary-dark dark:text-primary text-sm font-semibold hover:underline"
-            >
-              Historial
+            <button className="absolute bottom-0 right-0 p-2.5 bg-primary-500 text-white rounded-full shadow-lg border-4 border-white dark:border-slate-900 active:scale-90 transition-all">
+              <span className="material-symbols-outlined text-sm filled">edit</span>
             </button>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="flex flex-col gap-2 rounded-2xl p-5 bg-white dark:bg-surface-dark shadow-sm border border-gray-100 dark:border-gray-800 relative group">
-              <div className="flex justify-between items-start">
-                <div className="bg-orange-100 dark:bg-orange-900/30 p-2 rounded-lg text-orange-600 dark:text-orange-400">
-                  <span className="material-symbols-outlined text-[20px]">
-                    cake
-                  </span>
-                </div>
-              </div>
-              <div>
-                <p className="text-text-sub dark:text-gray-400 text-sm font-medium mb-1">
-                  Edad
-                </p>
-                <p className="text-text-main dark:text-white text-2xl font-bold tracking-tight">
-                  52{" "}
-                  <span className="text-sm font-normal text-gray-500">
-                    años
-                  </span>
-                </p>
-              </div>
-            </div>
 
-            <div className="flex flex-col gap-2 rounded-2xl p-5 bg-white dark:bg-surface-dark shadow-sm border border-gray-100 dark:border-gray-800 relative group">
-              <div className="flex justify-between items-start">
-                <div className="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-lg text-blue-600 dark:text-blue-400">
-                  <span className="material-symbols-outlined text-[20px]">
-                    height
-                  </span>
-                </div>
-              </div>
-              <div>
-                <p className="text-text-sub dark:text-gray-400 text-sm font-medium mb-1">
-                  Altura
-                </p>
-                <p className="text-text-main dark:text-white text-2xl font-bold tracking-tight">
-                  165{" "}
-                  <span className="text-sm font-normal text-gray-500">cm</span>
-                </p>
-              </div>
-            </div>
-
-            <div className="col-span-2 flex flex-row items-center justify-between gap-4 rounded-2xl p-5 bg-white dark:bg-surface-dark shadow-sm border border-gray-100 dark:border-gray-800">
-              <div className="flex flex-col gap-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <div className="bg-primary/20 p-1.5 rounded-lg text-green-700 dark:text-green-300">
-                    <span className="material-symbols-outlined text-[20px]">
-                      monitor_weight
-                    </span>
-                  </div>
-                  <p className="text-text-sub dark:text-gray-400 text-sm font-medium">
-                    Peso Actual
-                  </p>
-                </div>
-                <p className="text-text-main dark:text-white text-3xl font-bold tracking-tight">
-                  68.5{" "}
-                  <span className="text-lg font-normal text-gray-500">kg</span>
-                </p>
-              </div>
-              <div className="flex items-center gap-3 bg-gray-50 dark:bg-black/20 p-2 rounded-xl">
-                <button className="size-10 flex items-center justify-center rounded-lg bg-white dark:bg-gray-700 shadow-sm text-text-main dark:text-white active:scale-95 transition-transform hover:bg-gray-100 dark:hover:bg-gray-600">
-                  <span className="material-symbols-outlined">remove</span>
-                </button>
-                <button className="size-10 flex items-center justify-center rounded-lg bg-primary text-black shadow-lg shadow-primary/30 active:scale-95 transition-transform hover:bg-primary-dark">
-                  <span className="material-symbols-outlined">add</span>
-                </button>
-              </div>
+          <div className="text-center">
+            <h2 className="text-3xl font-black text-slate-900 dark:text-white leading-tight">Maria González</h2>
+            <div className="flex items-center gap-2 mt-2 justify-center">
+              <span className="text-[10px] font-black text-primary-600 dark:text-primary-400 bg-primary-500/10 px-3 py-1 rounded-full uppercase tracking-tighter ring-1 ring-primary-500/20">Miembro Elite</span>
+              <p className="text-xs font-bold text-slate-400">Unida en 2023</p>
             </div>
           </div>
         </section>
 
-        <section>
-          <h3 className="text-text-main dark:text-white text-lg font-bold leading-tight pb-3">
-            Mi "Porqué"
-          </h3>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="cursor-pointer relative overflow-hidden rounded-2xl bg-primary/10 border-2 border-primary p-4 flex flex-col gap-2 transition-all active:scale-[0.98]">
-              <div className="absolute top-2 right-2">
-                <span className="material-symbols-outlined text-primary text-[20px] bg-white rounded-full">
-                  check_circle
-                </span>
-              </div>
-              <span className="material-symbols-outlined text-green-800 dark:text-green-400 text-[28px]">
-                fitness_center
-              </span>
-              <p className="text-sm font-bold text-text-main dark:text-white">
-                Ganar Fuerza
-              </p>
+        {/* Metrics Grid */}
+        <section className="grid grid-cols-2 gap-4">
+          <div className="card-premium p-5 flex flex-col gap-1 items-center text-center">
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Edad</p>
+            <h3 className="text-2xl font-black text-slate-900 dark:text-white">52 <span className="text-xs opacity-50 font-bold">años</span></h3>
+          </div>
+          <div className="card-premium p-5 flex flex-col gap-1 items-center text-center">
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Altura</p>
+            <h3 className="text-2xl font-black text-slate-900 dark:text-white">165 <span className="text-xs opacity-50 font-bold">cm</span></h3>
+          </div>
+          <div className="col-span-2 card-premium p-6 flex flex-col items-center gap-4 relative overflow-hidden group">
+            <div className="flex flex-col items-center">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Peso Actual</p>
+              <h3 className="text-4xl font-black text-slate-900 dark:text-white tabular-nums">68.5 <span className="text-lg opacity-30 font-bold">kg</span></h3>
             </div>
-
-            <div className="cursor-pointer rounded-2xl bg-white dark:bg-surface-dark border border-gray-200 dark:border-gray-700 p-4 flex flex-col gap-2 hover:border-gray-300 dark:hover:border-gray-500 transition-all active:scale-[0.98]">
-              <span className="material-symbols-outlined text-gray-400 text-[28px]">
-                self_improvement
-              </span>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                Flexibilidad
-              </p>
-            </div>
-          </div>
-        </section>
-
-        {/* Gráficos de Progreso */}
-        <section className="animate-fade-in space-y-6">
-          <div>
-            <h3 className="text-text-main dark:text-white text-lg font-bold leading-tight mb-4">
-              📊 Progreso Semanal
-            </h3>
-            <WeeklyProgressChart data={weeklyProgressData} />
-          </div>
-
-          <div>
-            <h3 className="text-text-main dark:text-white text-lg font-bold leading-tight mb-4">
-              🔥 Calorías Consumidas
-            </h3>
-            <CaloriesChart data={caloriesData} />
-          </div>
-
-          <div>
-            <h3 className="text-text-main dark:text-white text-lg font-bold leading-tight mb-4">
-              💧 Hidratación Diaria
-            </h3>
-            <HydrationChart data={hydrationData} />
-          </div>
-        </section>
-
-        {/* Health Center Button */}
-        <button
-          onClick={() => navigate(ScreenName.HEALTH)}
-          className="w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-green-500/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
-        >
-          <span>🏥</span>
-          <span>Centro de Salud (Apple Health)</span>
-        </button>
-
-        {/* Challenges Button */}
-        <button
-          onClick={() => navigate(ScreenName.CHALLENGES)}
-          className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-purple-500/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2 mt-3"
-        >
-          <span>🏆</span>
-          <span>Retos & Competencias</span>
-        </button>
-
-        <button
-          className="w-full bg-surface-light dark:bg-surface-dark text-red-500 font-bold py-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 mt-4 active:scale-[0.98] transition-transform hover:bg-red-50 dark:hover:bg-red-900/10"
-          onClick={onLogout}
-        >
-          Cerrar Sesión
-        </button>
-      </div>
-
-      {/* History Modal Overlay */}
-      {showHistory && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fade-in">
-          <div className="bg-white dark:bg-surface-dark w-full max-w-md rounded-3xl p-6 shadow-2xl animate-slide-up">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-bold dark:text-white">
-                Progreso de Peso
-              </h3>
-              <button
-                onClick={() => setShowHistory(false)}
-                className="bg-gray-100 dark:bg-gray-700 p-2 rounded-full hover:bg-gray-200 transition-colors"
-              >
-                <span className="material-symbols-outlined dark:text-white">
-                  close
-                </span>
+            <div className="flex gap-4">
+              <button className="w-12 h-12 rounded-2xl bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white flex items-center justify-center shadow-soft active:scale-90 transition-all">
+                <span className="material-symbols-outlined">remove</span>
+              </button>
+              <button className="w-12 h-12 rounded-2xl bg-primary-500 text-white flex items-center justify-center shadow-lg shadow-primary-500/20 active:scale-90 transition-all">
+                <span className="material-symbols-outlined">add</span>
               </button>
             </div>
+            <button
+              onClick={() => setShowHistory(true)}
+              className="text-[10px] font-black text-primary-600 uppercase tracking-widest mt-2 px-4 py-2 hover:bg-primary-50 rounded-full transition-all"
+            >
+              Ver historial
+            </button>
+          </div>
+        </section>
 
-            {/* Mock Chart */}
-            <div className="h-48 flex items-end justify-between gap-2 mb-6 px-2">
+        {/* Charts Section */}
+        <section className="flex flex-col gap-10">
+          <div>
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-lg font-black text-slate-900 dark:text-white tracking-tight">Actividad Semanal</h3>
+              <span className="material-symbols-outlined text-slate-300">show_chart</span>
+            </div>
+            <div className="card-premium p-2">
+              <WeeklyProgressChart data={weeklyProgressData} />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-8">
+            <div>
+              <h3 className="text-lg font-black text-slate-900 dark:text-white tracking-tight mb-6">Calorías Totales</h3>
+              <div className="card-premium p-2">
+                <CaloriesChart data={caloriesData} />
+              </div>
+            </div>
+            <div>
+              <h3 className="text-lg font-black text-slate-900 dark:text-white tracking-tight mb-6">Nivel Hidratación</h3>
+              <div className="card-premium p-2">
+                <HydrationChart data={hydrationData} />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Bottom Actions */}
+        <section className="flex flex-col gap-4 mt-6">
+          <button
+            onClick={() => navigate(ScreenName.HEALTH)}
+            className="w-full bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-950 font-black py-5 rounded-[2rem] shadow-2xl active:scale-95 transition-all flex items-center justify-center gap-3"
+          >
+            <span className="material-symbols-outlined filled">health_metrics</span>
+            Apple Health Connect
+          </button>
+
+          <button
+            onClick={onLogout}
+            className="w-full py-5 text-red-500 font-black text-sm uppercase tracking-widest"
+          >
+            Cerrar Sesión
+          </button>
+        </section>
+      </div>
+
+      {/* Modern Modal */}
+      {showHistory && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-950/60 backdrop-blur-md p-4 safe-bottom">
+          <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl animate-slide-up border border-slate-100 dark:border-slate-800">
+            <div className="flex justify-between items-center mb-10">
+              <h3 className="text-2xl font-black text-slate-900 dark:text-white">Historial de Peso</h3>
+              <button onClick={() => setShowHistory(false)} className="p-2 rounded-full bg-slate-100 dark:bg-slate-800"><span className="material-symbols-outlined">close</span></button>
+            </div>
+
+            <div className="h-48 flex items-end justify-between gap-3 mb-10 px-2 group">
               {[72, 71.5, 71, 70.2, 69.8, 69, 68.5].map((val, i) => (
-                <div
-                  key={i}
-                  className="flex flex-col items-center gap-2 flex-1 group"
-                >
-                  <div
-                    className="w-full bg-primary/30 dark:bg-primary/20 rounded-t-lg relative group-hover:bg-primary transition-colors"
-                    style={{ height: `${((val - 65) / 10) * 100}%` }}
-                  >
-                    <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-black text-white text-[10px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity">
+                <div key={i} className="flex-1 flex flex-col items-center gap-3">
+                  <div className="w-full bg-primary-500/10 rounded-2xl relative transition-all group-hover:bg-primary-500/30" style={{ height: `${((val - 65) / 10) * 100}%` }}>
+                    <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[10px] font-black py-1.5 px-3 rounded-xl opacity-0 hover:opacity-100 transition-opacity">
                       {val}kg
                     </div>
                   </div>
-                  <span className="text-[10px] text-gray-400">
-                    {["L", "M", "X", "J", "V", "S", "D"][i]}
-                  </span>
+                  <span className="text-[10px] font-black text-slate-400 tracking-tighter">{['L', 'M', 'X', 'J', 'V', 'S', 'D'][i]}</span>
                 </div>
               ))}
             </div>
 
-            <div className="bg-primary/10 rounded-xl p-4 flex items-center gap-3">
-              <span className="material-symbols-outlined text-green-700 dark:text-primary">
-                trending_down
-              </span>
+            <div className="bg-primary-500/5 border border-primary-500/20 rounded-3xl p-6 flex items-center gap-4">
+              <div className="w-12 h-12 bg-primary-500 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-primary-500/20">
+                <span className="material-symbols-outlined filled">trending_down</span>
+              </div>
               <div>
-                <p className="text-sm font-bold text-green-900 dark:text-green-100">
-                  ¡Tendencia Positiva!
-                </p>
-                <p className="text-xs text-green-800 dark:text-green-200/70">
-                  Has bajado 3.5kg este mes. Sigue así.
-                </p>
+                <h4 className="font-black text-slate-900 dark:text-white">¡Vas por buen camino!</h4>
+                <p className="text-xs font-bold text-slate-400 mt-0.5">Bajaste 3.5kg en los últimos 30 días.</p>
               </div>
             </div>
 
             <button
               onClick={() => setShowHistory(false)}
-              className="w-full mt-6 bg-primary text-black font-bold py-3.5 rounded-xl hover:bg-primary-dark transition-colors"
+              className="w-full bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white font-black py-4 rounded-2xl mt-8 active:scale-95 transition-all"
             >
               Entendido
             </button>
           </div>
         </div>
       )}
-
-      <style>{`
-        @keyframes slideUp {
-            from { transform: translateY(100%); }
-            to { transform: translateY(0); }
-        }
-        .animate-slide-up {
-            animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-      `}</style>
     </div>
   );
 };

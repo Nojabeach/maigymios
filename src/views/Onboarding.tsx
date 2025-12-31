@@ -7,75 +7,61 @@ interface OnboardingProps {
 
 const OnboardingView: React.FC<OnboardingProps> = ({ onComplete }) => {
   return (
-    <div className="relative flex h-full min-h-screen w-full max-w-md flex-col bg-background-light dark:bg-background-dark overflow-hidden sm:border-x sm:border-gray-200 dark:sm:border-gray-800">
-      {/* Decorative Background Blur */}
-      <div className="absolute top-[-10%] right-[-20%] w-64 h-64 bg-primary/20 rounded-full blur-[80px] pointer-events-none z-0"></div>
+    <div className="flex h-full min-h-screen flex-col bg-white dark:bg-slate-950 overflow-hidden relative">
+      {/* Absolute Decorative elements */}
+      <div className="absolute top-0 right-0 w-full h-[65%] z-0">
+        <img
+          src={IMAGES.ONBOARDING_HERO}
+          className="w-full h-full object-cover brightness-105 saturate-110"
+          alt="Hero"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-white dark:from-slate-950 via-white/50 dark:via-slate-950/50 to-transparent"></div>
+      </div>
 
-      {/* Top Bar: Skip Action */}
-      <div className="absolute top-0 left-0 w-full z-20 flex items-center justify-end p-6 pt-12 sm:pt-8">
+      {/* Top Action */}
+      <div className="absolute top-0 left-0 w-full p-8 pt-14 flex justify-end z-20">
         <button
-          className="group flex items-center justify-center gap-1 rounded-full bg-white/70 dark:bg-black/30 backdrop-blur-md px-4 py-2 transition-all hover:bg-white/90 dark:hover:bg-black/50 shadow-lg"
           onClick={onComplete}
+          className="px-5 py-2 rounded-full bg-white/20 backdrop-blur-xl border border-white/30 text-white font-black text-[10px] uppercase tracking-widest shadow-2xl active:scale-95 transition-all"
         >
-          <span className="text-[#102210] dark:text-white text-sm font-semibold tracking-wide">
-            Omitir
-          </span>
-          <span className="material-symbols-outlined text-[#102210] dark:text-white text-[18px]">
-            chevron_right
-          </span>
+          Omitir
         </button>
       </div>
 
-      {/* Main Image Area */}
-      <div className="relative h-[60%] w-full overflow-hidden bg-gradient-to-br from-primary/10 to-primary/5">
-        <img
-          src={IMAGES.ONBOARDING_HERO}
-          alt="Fitness a tu ritmo"
-          className="absolute inset-0 w-full h-full object-cover brightness-105 saturate-125 contrast-110"
-          loading="eager"
-          fetchPriority="high"
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background-light dark:to-background-dark"></div>
-      </div>
-
       {/* Content Area */}
-      <div className="relative flex flex-1 flex-col justify-between px-8 pb-12 -mt-6 z-10">
-        <div className="flex flex-col gap-4">
-          <div className="w-fit rounded-full bg-primary/15 dark:bg-primary/25 border border-primary/30 px-4 py-2 mb-2 backdrop-blur-sm">
-            <p className="text-xs font-bold uppercase tracking-widest text-primary dark:text-primary/90">
-              ✨ Personalizado
-            </p>
+      <div className="mt-auto relative z-10 p-8 pb-16 flex flex-col gap-10">
+        <div className="flex flex-col gap-5">
+          <div className="flex items-center gap-2">
+            <span className="w-10 h-1 rounded-full bg-primary-500"></span>
+            <span className="text-[10px] font-black text-primary-500 uppercase tracking-widest">Premium Training</span>
           </div>
-          <h1 className="text-[#102210] dark:text-white text-4xl font-black leading-tight tracking-tight">
-            Fitness <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-primary to-primary/80 dark:from-primary dark:via-primary dark:to-primary/70">
-              a tu Ritmo
-            </span>
+          <h1 className="text-5xl font-black text-slate-900 dark:text-white leading-tight tracking-tight">
+            Fitness a <br />tu Ritmo
           </h1>
-          <p className="text-[#102210]/75 dark:text-gray-200 text-base font-medium leading-relaxed mt-2">
-            Ejercicios en casa diseñados específicamente para potenciar tu
-            cuerpo y renovar tu energía.
+          <p className="text-base font-medium text-slate-400 leading-relaxed max-w-[280px]">
+            Entrenamientos en casa diseñados para potenciar tu cuerpo y renovar tu energía cada día.
           </p>
         </div>
 
         <div className="flex flex-col gap-6">
-          <div className="flex w-full flex-row items-center justify-start gap-3">
-            <div className="h-2.5 w-10 rounded-full bg-primary shadow-lg shadow-primary/40 transition-all duration-300"></div>
-            <div className="h-2 w-2 rounded-full bg-[#102210]/15 dark:bg-white/25"></div>
-            <div className="h-2 w-2 rounded-full bg-[#102210]/15 dark:bg-white/25"></div>
+          <div className="flex gap-2">
+            <div className="w-8 h-2 rounded-full bg-primary-500"></div>
+            <div className="w-2 h-2 rounded-full bg-slate-200 dark:bg-slate-800"></div>
+            <div className="w-2 h-2 rounded-full bg-slate-200 dark:bg-slate-800"></div>
           </div>
 
           <button
-            className="rounded-2xl bg-gradient-to-r from-primary to-primary/90 hover:from-primary hover:to-primary active:scale-95 transition-all duration-200 py-5 px-8 flex items-center justify-center group shadow-xl shadow-primary/30 font-bold text-base"
             onClick={onComplete}
+            className="w-full bg-primary-500 text-white font-black py-5 rounded-[2.5rem] shadow-2xl shadow-primary-500/30 active:scale-95 transition-all flex items-center justify-center gap-3 text-lg"
           >
-            <span className="text-white dark:text-[#102210]">Siguiente</span>
-            <span className="material-symbols-outlined text-white dark:text-[#102210] ml-2 group-hover:translate-x-1 transition-transform">
-              arrow_forward
-            </span>
+            Siguiente
+            <span className="material-symbols-outlined">arrow_forward</span>
           </button>
         </div>
       </div>
+
+      {/* Decorative Blur */}
+      <div className="absolute bottom-[-10%] right-[-10%] w-64 h-64 bg-primary-500/10 rounded-full blur-[100px] -z-10"></div>
     </div>
   );
 };

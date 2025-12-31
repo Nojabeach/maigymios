@@ -6,213 +6,107 @@ interface SettingsProps {
 }
 
 const SettingsView: React.FC<SettingsProps> = ({ navigate }) => {
-  // Inicializar estado desde LocalStorage o por defecto
-  const [pushEnabled, setPushEnabled] = useState(() => {
-    return localStorage.getItem("setting_pushEnabled") === "true";
-  });
-  const [hydrationReminder, setHydrationReminder] = useState(() => {
-    const val = localStorage.getItem("setting_hydrationReminder");
-    return val ? val === "true" : true;
-  });
-  const [workoutReminder, setWorkoutReminder] = useState(() => {
-    return localStorage.getItem("setting_workoutReminder") === "true";
-  });
+  const [hydrationReminder, setHydrationReminder] = useState(() => localStorage.getItem("setting_hydrationReminder") !== "false");
+  const [workoutReminder, setWorkoutReminder] = useState(() => localStorage.getItem("setting_workoutReminder") === "true");
 
-  // Guardar cambios cuando ocurren
   useEffect(() => {
-    localStorage.setItem("setting_pushEnabled", String(pushEnabled));
-  }, [pushEnabled]);
-  useEffect(() => {
-    localStorage.setItem(
-      "setting_hydrationReminder",
-      String(hydrationReminder)
-    );
+    localStorage.setItem("setting_hydrationReminder", String(hydrationReminder));
   }, [hydrationReminder]);
+
   useEffect(() => {
     localStorage.setItem("setting_workoutReminder", String(workoutReminder));
   }, [workoutReminder]);
 
-  const requestPermission = () => {
-    // Simular petición real de iOS
-    if ("Notification" in window) {
-      Notification.requestPermission().then((permission) => {
-        if (permission === "granted") {
-          setPushEnabled(true);
-          alert("¡Notificaciones activadas!");
-        } else {
-          alert(
-            "Permiso denegado. Por favor habilítalo en los ajustes de tu iPhone."
-          );
-        }
-      });
-    } else {
-      // Fallback demo
-      setPushEnabled(!pushEnabled);
-    }
-  };
+  const toggleHydration = () => setHydrationReminder(!hydrationReminder);
+  const toggleWorkout = () => setWorkoutReminder(!workoutReminder);
 
   return (
-    <div className="relative flex h-full min-h-screen w-full flex-col max-w-md mx-auto overflow-x-hidden pb-10 bg-background-light dark:bg-background-dark">
-      <header className="sticky top-0 z-50 backdrop-blur-md bg-background-light/80 dark:bg-background-dark/80 border-b border-gray-200 dark:border-gray-800 transition-colors duration-200">
-        <div className="flex items-center p-4 justify-between h-[52px]">
+    <div className="flex-1 bg-white dark:bg-slate-950 flex flex-col min-h-screen">
+      {/* Header - Glassmorphism */}
+      <header className="sticky top-0 z-40 bg-white/70 dark:bg-slate-950/70 backdrop-blur-xl border-b border-slate-100 dark:border-slate-800/50 px-6 py-4 flex items-center justify-between safe-top">
+        <div className="flex items-center gap-3">
           <button
-            className="text-primary flex items-center justify-center -ml-2 p-2 rounded-full hover:bg-gray-200/50 dark:hover:bg-gray-800/50 transition-colors"
+            className="p-2 rounded-2xl bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 active:scale-90 transition-all font-black text-xs"
             onClick={() => navigate(ScreenName.HOME)}
           >
-            <span className="material-symbols-outlined text-[28px]">
-              chevron_left
-            </span>
-            <span className="text-base font-medium ml-[-4px]">Volver</span>
+            <span className="material-symbols-outlined">arrow_back</span>
           </button>
-          <h2 className="text-lg font-bold leading-tight tracking-tight flex-1 text-center pr-12">
-            Ajustes
-          </h2>
+          <h1 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">Ajustes</h1>
         </div>
       </header>
 
-      <main className="flex-1 px-4 py-2 w-full flex flex-col gap-6 animate-fade-in">
-        <div className="flex flex-col gap-2">
-          <h3 className="text-xs font-semibold text-text-sub dark:text-gray-400 uppercase tracking-wider ml-4">
-            Notificaciones Push
-          </h3>
-          <div className="bg-surface-light dark:bg-surface-dark rounded-xl overflow-hidden shadow-sm transition-colors duration-200">
-            <div className="group flex items-center gap-4 px-4 py-3.5">
-              <div className="flex items-center justify-center rounded-lg bg-cyan-400 shrink-0 size-8 text-white shadow-sm">
-                <span className="material-symbols-outlined text-[20px]">
-                  water_drop
-                </span>
+      <div className="flex flex-col gap-10 p-6 pb-24 animate-fade-in w-full max-w-lg mx-auto overflow-y-auto">
+
+        {/* Notifications Section */}
+        <section>
+          <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-4">Notificaciones Push</h3>
+          <div className="card-premium overflow-hidden border-none p-0 divide-y divide-slate-100 dark:divide-slate-800/50">
+            <div className="flex items-center justify-between p-5 group cursor-pointer" onClick={toggleHydration}>
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-2xl bg-blue-50 dark:bg-blue-900/30 text-blue-500 flex items-center justify-center">
+                  <span className="material-symbols-outlined filled">water_drop</span>
+                </div>
+                <p className="font-black text-slate-900 dark:text-white">Recordatorios de Agua</p>
               </div>
-              <div className="flex-1 flex flex-col justify-center">
-                <p className="text-base font-normal leading-tight dark:text-white">
-                  Recordatorios de Agua
-                </p>
-              </div>
-              <div className="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
-                <input
-                  checked={hydrationReminder}
-                  onChange={() => setHydrationReminder(!hydrationReminder)}
-                  className="toggle-checkbox absolute block w-7 h-7 rounded-full bg-white border-4 appearance-none cursor-pointer border-[#e5e7eb] dark:border-[#374151] checked:border-primary transition-all duration-300 left-0 checked:left-5 top-0 z-10 shadow-sm"
-                  type="checkbox"
-                />
-                <label className="toggle-label block overflow-hidden h-7 rounded-full bg-gray-200 dark:bg-gray-700 cursor-pointer transition-colors duration-300"></label>
+              <div className={`w-12 h-6 rounded-full p-1 transition-colors duration-300 ${hydrationReminder ? 'bg-primary-500' : 'bg-slate-200 dark:bg-slate-800'}`}>
+                <div className={`w-4 h-4 rounded-full bg-white shadow-md transition-transform duration-300 ${hydrationReminder ? 'translate-x-6' : 'translate-x-0'}`}></div>
               </div>
             </div>
 
-            <div className="h-[0.5px] bg-gray-200 dark:bg-gray-700 mx-4"></div>
-
-            <div className="group flex items-center gap-4 px-4 py-3.5">
-              <div className="flex items-center justify-center rounded-lg bg-green-500 shrink-0 size-8 text-white shadow-sm">
-                <span className="material-symbols-outlined text-[20px]">
-                  fitness_center
-                </span>
+            <div className="flex items-center justify-between p-5 group cursor-pointer" onClick={toggleWorkout}>
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-2xl bg-green-50 dark:bg-green-900/30 text-green-500 flex items-center justify-center">
+                  <span className="material-symbols-outlined filled">fitness_center</span>
+                </div>
+                <p className="font-black text-slate-900 dark:text-white">Rutinas Sugeridas</p>
               </div>
-              <div className="flex-1 flex flex-col justify-center">
-                <p className="text-base font-normal leading-tight dark:text-white">
-                  Rutinas Sugeridas
-                </p>
+              <div className={`w-12 h-6 rounded-full p-1 transition-colors duration-300 ${workoutReminder ? 'bg-primary-500' : 'bg-slate-200 dark:bg-slate-800'}`}>
+                <div className={`w-4 h-4 rounded-full bg-white shadow-md transition-transform duration-300 ${workoutReminder ? 'translate-x-6' : 'translate-x-0'}`}></div>
               </div>
-              <div className="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
-                <input
-                  checked={workoutReminder}
-                  onChange={() => setWorkoutReminder(!workoutReminder)}
-                  className="toggle-checkbox absolute block w-7 h-7 rounded-full bg-white border-4 appearance-none cursor-pointer border-[#e5e7eb] dark:border-[#374151] checked:border-primary transition-all duration-300 left-0 checked:left-5 top-0 z-10 shadow-sm"
-                  type="checkbox"
-                />
-                <label className="toggle-label block overflow-hidden h-7 rounded-full bg-gray-200 dark:bg-gray-700 cursor-pointer transition-colors duration-300"></label>
-              </div>
-            </div>
-
-            <div className="h-[0.5px] bg-gray-200 dark:bg-gray-700 mx-4"></div>
-
-            <button
-              onClick={requestPermission}
-              className="w-full text-left group flex items-center gap-4 px-4 py-3.5 active:bg-gray-50 dark:active:bg-gray-800 transition-colors"
-            >
-              <div className="flex items-center justify-center rounded-lg bg-purple-500 shrink-0 size-8 text-white shadow-sm">
-                <span className="material-symbols-outlined text-[20px]">
-                  notifications_active
-                </span>
-              </div>
-              <div className="flex-1 flex flex-col justify-center">
-                <p className="text-base font-normal leading-tight dark:text-white">
-                  Probar Notificación
-                </p>
-                <p className="text-xs text-text-sub dark:text-gray-400">
-                  Simular envío inmediato
-                </p>
-              </div>
-              <span className="material-symbols-outlined text-gray-400 dark:text-gray-600">
-                chevron_right
-              </span>
-            </button>
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-2">
-          <h3 className="text-xs font-semibold text-text-sub dark:text-gray-400 uppercase tracking-wider ml-4">
-            General
-          </h3>
-          <div className="bg-surface-light dark:bg-surface-dark rounded-xl overflow-hidden shadow-sm transition-colors duration-200">
-            <div className="group flex items-center gap-4 px-4 py-3.5 cursor-pointer active:bg-gray-50 dark:active:bg-gray-800 transition-colors">
-              <div className="flex items-center justify-center rounded-lg bg-blue-500 shrink-0 size-8 text-white shadow-sm">
-                <span className="material-symbols-outlined text-[20px]">
-                  credit_card
-                </span>
-              </div>
-              <div className="flex-1 flex flex-col justify-center">
-                <p className="text-base font-normal leading-tight dark:text-white">
-                  Gestionar Suscripción
-                </p>
-                <p className="text-xs text-primary font-medium">
-                  Plan Premium Activo
-                </p>
-              </div>
-              <span className="material-symbols-outlined text-gray-400 dark:text-gray-600">
-                chevron_right
-              </span>
-            </div>
-            <div className="h-[0.5px] bg-gray-200 dark:bg-gray-700 mx-4"></div>
-            <div className="group flex items-center gap-4 px-4 py-3.5 cursor-pointer active:bg-gray-50 dark:active:bg-gray-800 transition-colors">
-              <div className="flex items-center justify-center rounded-lg bg-orange-400 shrink-0 size-8 text-white shadow-sm">
-                <span className="material-symbols-outlined text-[20px]">
-                  restaurant
-                </span>
-              </div>
-              <div className="flex-1 flex flex-col justify-center">
-                <p className="text-base font-normal leading-tight dark:text-white">
-                  Preferencias Dietéticas
-                </p>
-              </div>
-              <span className="material-symbols-outlined text-gray-400 dark:text-gray-600">
-                chevron_right
-              </span>
             </div>
           </div>
-        </div>
+        </section>
 
-        <div className="mt-4 text-center">
-          <p className="text-xs text-text-sub dark:text-gray-500 font-medium">
-            Vitality AI v2.3.0
-          </p>
-        </div>
-      </main>
+        {/* Account Section */}
+        <section>
+          <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-4">Mi Suscripción</h3>
+          <div className="card-premium p-6 bg-slate-900 text-white relative overflow-hidden flex items-center justify-between">
+            <div className="relative z-10">
+              <h4 className="font-black text-lg">Vitality Elite</h4>
+              <p className="text-xs text-slate-400 mt-1 uppercase tracking-tighter">Plan Familiar • Activo</p>
+            </div>
+            <button className="relative z-10 bg-white/10 hover:bg-white/20 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all backdrop-blur-md">Gestionar</button>
+            <div className="absolute top-0 right-0 w-32 h-32 bg-primary-500/20 rounded-full blur-[50px] translate-x-1/2 -translate-y-1/2"></div>
+          </div>
+        </section>
 
-      <style>{`
-        .toggle-checkbox:checked {
-            right: 0;
-            border-color: #22c55e;
-        }
-        .toggle-checkbox:checked + .toggle-label {
-            background-color: #22c55e;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-fade-in {
-            animation: fadeIn 0.4s ease-out forwards;
-        }
-      `}</style>
+        {/* More Options */}
+        <section>
+          <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-4">General</h3>
+          <div className="card-premium overflow-hidden border-none p-0 divide-y divide-slate-100 dark:divide-slate-800/50">
+            {[
+              { icon: 'restaurant', title: 'Preferencias Dietéticas', color: 'orange' },
+              { icon: 'share', title: 'Compartir con Amigos', color: 'blue' },
+              { icon: 'help', title: 'Ayuda y Soporte', color: 'slate' },
+              { icon: 'privacy_tip', title: 'Privacidad y Seguridad', color: 'red' }
+            ].map((item, i) => (
+              <div key={i} className="flex items-center justify-between p-5 group hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors cursor-pointer">
+                <div className="flex items-center gap-4">
+                  <div className={`w-10 h-10 rounded-2xl bg-${item.color}-50 dark:bg-${item.color}-900/30 text-${item.color}-500 flex items-center justify-center`}>
+                    <span className="material-symbols-outlined">{item.icon}</span>
+                  </div>
+                  <p className="font-black text-slate-900 dark:text-white">{item.title}</p>
+                </div>
+                <span className="material-symbols-outlined text-slate-300 group-hover:translate-x-1 transition-transform">chevron_right</span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <div className="text-center mt-4">
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Vitality App v2.4.0</p>
+        </div>
+      </div>
     </div>
   );
 };

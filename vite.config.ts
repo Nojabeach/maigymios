@@ -44,10 +44,9 @@ export default defineConfig({
     outDir: "dist",
   },
   server: {
-    middlewareMode: true,
-    headers: {
-      "Cache-Control": "public, max-age=31536000, immutable",
-    },
+    host: true,
+    port: 5173,
+    strictPort: false,
   },
   preview: {
     headers: {

@@ -134,20 +134,16 @@ export default function App() {
           calories: data.calories,
           activityMin: data.activity_minutes,
           mindMin: data.mind_minutes,
-          hydrationCurrent: data.hydration_liters || 0, // Map from hydration_liters
-          hydrationGoal: 2.5, // Default or fetch if stored
+          hydrationCurrent: data.hydration_liters || 0,
+          hydrationGoal: 2.5,
         };
-        // Only update if different to avoid jitters
         setStats(remoteStats);
         localStorage.setItem(
           "vitality_user_stats",
           JSON.stringify(remoteStats)
         );
       } else {
-        // No row found, insert default for today
-        console.log("Creating new stats row for user today");
         const newStats = { ...defaultStats };
-        // We set stats to default (0s) but maybe we want to keep hydrationGoal?
         newStats.hydrationGoal = 2.5;
         setStats(newStats);
         syncToSupabase(newStats, userId);
@@ -170,7 +166,6 @@ export default function App() {
           filter: `user_id=eq.${userId}`,
         },
         (payload) => {
-          console.log("Realtime update received:", payload);
           const newData = payload.new;
           if (newData) {
             const newStats: UserStats = {
@@ -213,14 +208,10 @@ export default function App() {
     await supabase.from("user_stats").upsert(upsertData);
   };
 
-  // Sync Stats to DB (Debounced via useEffect isn't ideal for rapid clicks,
-  // but acceptable for prototype. For production, use optimistic UI + debounced save)
+  // Sync Stats to DB
   useEffect(() => {
     if (isAuthenticated && user && !isOffline) {
-      // We save to local storage immediately
       localStorage.setItem("vitality_user_stats", JSON.stringify(stats));
-
-      // We debounce the server save slightly to avoid flooding DB on rapid clicks
       const timer = setTimeout(() => {
         syncToSupabase(stats, user.id);
       }, 1000);
@@ -250,7 +241,6 @@ export default function App() {
   }, [darkMode]);
 
   const handleLogin = () => {
-    // Auth Listener handles state update
     setCurrentScreen(ScreenName.HOME);
   };
 
@@ -262,7 +252,6 @@ export default function App() {
   const navigate = (screen: ScreenName) => {
     setCurrentScreen(screen);
     window.scrollTo(0, 0);
-    // Track screen view for analytics
     trackScreenView(screen);
   };
 
@@ -276,29 +265,6 @@ export default function App() {
     }));
   };
 
-  // Auth Screens
-  if (!isAuthenticated) {
-    if (currentScreen === ScreenName.ONBOARDING) {
-      return (
-        <OnboardingView
-          onComplete={() => {
-            localStorage.setItem("vitality_has_onboarded", "true");
-            navigate(ScreenName.REGISTER);
-          }}
-        />
-      );
-    }
-    if (currentScreen === ScreenName.REGISTER) {
-      return <RegisterView onLogin={handleLogin} navigate={navigate} />;
-    }
-    if (currentScreen === ScreenName.FORGOT_PASSWORD) {
-      return <ForgotPasswordView navigate={navigate} />;
-    }
-    // Default to Login
-    return <LoginView onLogin={handleLogin} navigate={navigate} />;
-  }
-
-  // App Screens
   const renderScreen = () => {
     switch (currentScreen) {
       case ScreenName.HOME:
@@ -352,6 +318,26 @@ export default function App() {
     }
   };
 
+  if (!isAuthenticated) {
+    if (currentScreen === ScreenName.ONBOARDING) {
+      return (
+        <OnboardingView
+          onComplete={() => {
+            localStorage.setItem("vitality_has_onboarded", "true");
+            navigate(ScreenName.REGISTER);
+          }}
+        />
+      );
+    }
+    if (currentScreen === ScreenName.REGISTER) {
+      return <RegisterView onLogin={handleLogin} navigate={navigate} />;
+    }
+    if (currentScreen === ScreenName.FORGOT_PASSWORD) {
+      return <ForgotPasswordView navigate={navigate} />;
+    }
+    return <LoginView onLogin={handleLogin} navigate={navigate} />;
+  }
+
   const hideBottomNav = [
     ScreenName.WORKOUT_DETAIL,
     ScreenName.CHAT,
@@ -361,19 +347,20 @@ export default function App() {
   ].includes(currentScreen as any);
 
   return (
-    <div className="relative flex h-full min-h-screen w-full flex-col bg-white dark:bg-background-dark overflow-x-hidden">
-      {/* Container responsivo para iPhone y iPad */}
-      <div className="flex flex-col h-full w-full md:max-w-4xl md:mx-auto md:bg-surface-light dark:md:bg-surface-dark md:shadow-xl md:rounded-2xl overflow-hidden">
-        {/* Offline Status Banner */}
-        <OfflineStatusBadge variant="banner" />
+    <div className="relative min-h-screen w-full bg-slate-50 dark:bg-slate-950 flex justify-center items-start md:items-center p-0 md:p-8 overflow-x-hidden">
+      <div className="hidden md:block absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary-500/10 rounded-full blur-[120px]"></div>
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-500/10 rounded-full blur-[120px]"></div>
+      </div>
 
+      <div className="relative z-10 w-full h-full min-h-screen md:min-h-0 md:h-[844px] md:w-[393px] md:rounded-[3.5rem] md:shadow-[0_0_0_12px_#020617] md:border-[8px] md:border-slate-900 bg-white dark:bg-slate-950 overflow-hidden flex flex-col transition-all duration-500 shadow-2xl">
+        <OfflineStatusBadge variant="banner" />
         <main
-          className={`flex-1 flex flex-col bg-white dark:bg-background-dark transition-smooth ${!hideBottomNav ? "pb-20 md:pb-6" : ""
+          className={`flex-1 flex flex-col bg-white dark:bg-slate-950 transition-all ${!hideBottomNav ? "pb-20 md:pb-6" : ""
             }`}
         >
           {renderScreen()}
         </main>
-
         {!hideBottomNav && (
           <BottomNav currentScreen={currentScreen} navigate={navigate} />
         )}

@@ -12,89 +12,74 @@ const HealthView: React.FC<HealthViewProps> = ({
   toggleDarkMode,
 }) => {
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-24">
-      {/* Header */}
-      <div className="sticky top-0 z-40 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-        <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-              Centro de Salud
-            </h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              Datos sincronizados desde Apple Health
-            </p>
-          </div>
+    <div className="flex-1 bg-white dark:bg-slate-950 flex flex-col min-h-screen">
+      {/* Header - Glassmorphism */}
+      <header className="sticky top-0 z-40 bg-white/70 dark:bg-slate-950/70 backdrop-blur-xl border-b border-slate-100 dark:border-slate-800/50 px-6 py-4 flex items-center justify-between safe-top">
+        <div className="flex items-center gap-3">
           <button
-            onClick={toggleDarkMode}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            className="p-2 rounded-2xl bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 active:scale-90 transition-all"
+            onClick={() => navigate(ScreenName.PROFILE)}
           >
-            🌙
+            <span className="material-symbols-outlined">arrow_back</span>
           </button>
+          <h1 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">Centro de Salud</h1>
         </div>
-      </div>
+        <button
+          onClick={toggleDarkMode}
+          className="p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800 text-primary-500"
+        >
+          <span className="material-symbols-outlined filled">dark_mode</span>
+        </button>
+      </header>
 
-      {/* Main Content */}
-      <div className="max-w-2xl mx-auto px-4 py-6">
+      <div className="flex flex-col gap-8 p-6 pb-24 animate-fade-in w-full max-w-lg mx-auto overflow-y-auto">
+        {/* Intro */}
+        <section className="px-1 text-center">
+          <p className="text-[11px] font-black text-primary-500 uppercase tracking-widest mb-2">Sincronización Inteligente</p>
+          <h2 className="text-3xl font-black text-slate-900 dark:text-white leading-tight">Tus Datos de Apple Health</h2>
+          <p className="text-sm font-medium text-slate-400 mt-2">Visualiza tu actividad, sueño y salud cardiovascular en un solo lugar.</p>
+        </section>
+
         <HealthDashboard />
 
-        {/* Info Section */}
-        <div className="mt-8 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4">
-          <p className="text-sm text-blue-900 dark:text-blue-300">
-            💡 <strong>Tip:</strong> Conecta tu Apple Health para ver datos
-            reales de tu actividad, sueño y frecuencia cardíaca. Los datos se
-            sincronizan automáticamente cuando actualizas esta vista.
-          </p>
-        </div>
-
-        {/* Features Info */}
-        <div className="mt-6 grid grid-cols-2 gap-3">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-            <p className="text-2xl mb-2">📊</p>
-            <p className="text-sm font-medium text-gray-900 dark:text-white">
-              Gráficos Detallados
-            </p>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              Visualiza tendencias semanales
-            </p>
+        {/* Tip Section */}
+        <section className="card-premium bg-slate-950 text-white p-6 relative overflow-hidden">
+          <div className="relative z-10 flex gap-4">
+            <div className="w-12 h-12 bg-primary-500 rounded-2xl flex items-center justify-center text-white shrink-0">
+              <span className="material-symbols-outlined filled">lightbulb</span>
+            </div>
+            <div>
+              <h4 className="font-black text-sm uppercase tracking-wider mb-1">Dato Clave</h4>
+              <p className="text-xs text-slate-400 leading-relaxed">Conectar tu Apple Watch permite a Vitality IA darte consejos mucho más precisos sobre tu recuperación.</p>
+            </div>
           </div>
+        </section>
 
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-            <p className="text-2xl mb-2">🎯</p>
-            <p className="text-sm font-medium text-gray-900 dark:text-white">
-              Metas Personalizadas
-            </p>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              Establece y monitorea objetivos
-            </p>
-          </div>
+        {/* Grid Info */}
+        <section className="grid grid-cols-2 gap-4">
+          {[
+            { icon: 'bar_chart', title: 'Tendencias', desc: 'Análisis Semanal' },
+            { icon: 'track_changes', title: 'Objetivos', desc: 'Personalizados' },
+            { icon: 'history', title: 'Historial', desc: 'Última sinc. 5m' },
+            { icon: 'encrypted', title: 'Privacidad', desc: '100% Protegido' }
+          ].map((item, i) => (
+            <div key={i} className="card-premium p-5 flex flex-col gap-3">
+              <div className="w-10 h-10 rounded-xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-primary-500">
+                <span className="material-symbols-outlined">{item.icon}</span>
+              </div>
+              <div>
+                <h4 className="font-black text-sm text-slate-900 dark:text-white">{item.title}</h4>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter mt-0.5">{item.desc}</p>
+              </div>
+            </div>
+          ))}
+        </section>
 
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-            <p className="text-2xl mb-2">⏱️</p>
-            <p className="text-sm font-medium text-gray-900 dark:text-white">
-              Historial Completo
-            </p>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              Última sinc. hace 5 min
-            </p>
-          </div>
-
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-            <p className="text-2xl mb-2">🔐</p>
-            <p className="text-sm font-medium text-gray-900 dark:text-white">
-              Privacidad Total
-            </p>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              Tus datos están protegidos
-            </p>
-          </div>
-        </div>
-
-        {/* Back Button */}
+        {/* Action Button */}
         <button
-          onClick={() => navigate(ScreenName.PROFILE)}
-          className="w-full mt-8 px-4 py-3 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white font-medium rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+          className="w-full bg-primary-500 text-white font-black py-5 rounded-[2rem] shadow-xl shadow-primary-500/20 active:scale-95 transition-all mt-4"
         >
-          ← Volver
+          Sincronizar Datos Ahora
         </button>
       </div>
     </div>
