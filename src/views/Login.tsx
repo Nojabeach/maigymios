@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { ScreenName } from '../types';
 import { supabase } from '../supabaseClient';
+import SocialAuth from '../components/SocialAuth';
+
 
 interface LoginProps {
   onLogin: () => void;
@@ -99,6 +101,9 @@ const LoginView: React.FC<LoginProps> = ({ onLogin, navigate }) => {
           )}
         </button>
       </form>
+
+      <SocialAuth />
+
 
       <div className="mt-12 text-center relative z-10 flex flex-col gap-6">
         <p className="text-xs font-bold text-slate-400 uppercase tracking-widest leading-loose">
