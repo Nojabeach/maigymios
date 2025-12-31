@@ -33,14 +33,25 @@ export default defineConfig({
           "vendor-ui": ["@supabase/supabase-js"],
           "vendor-charts": ["recharts"],
         },
+        entryFileNames: "assets/[name]-[hash].js",
+        chunkFileNames: "assets/[name]-[hash].js",
+        assetFileNames: "assets/[name]-[hash][extname]",
       },
     },
     chunkSizeWarningLimit: 1000,
-    // Optimize image loading and lazy loading
     assetsInlineLimit: 4096,
+    sourcemap: false,
+    outDir: "dist",
   },
   server: {
-    // Enable compression for dev server
     middlewareMode: true,
+    headers: {
+      "Cache-Control": "public, max-age=31536000, immutable",
+    },
+  },
+  preview: {
+    headers: {
+      "Cache-Control": "public, max-age=31536000, immutable",
+    },
   },
 });
