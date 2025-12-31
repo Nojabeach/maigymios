@@ -12,6 +12,7 @@ const RegisterView: React.FC<RegisterProps> = ({ onLogin, navigate }) => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,11 +21,11 @@ const RegisterView: React.FC<RegisterProps> = ({ onLogin, navigate }) => {
     try {
       const { data, error: authError } = await supabase.auth.signUp({ email, password });
       if (authError) throw authError;
+
       if (data.session) {
         onLogin();
       } else if (data.user) {
-        alert('Cuenta creada. Por favor verifica tu email para continuar.');
-        navigate(ScreenName.LOGIN);
+        setSuccess(true);
       }
     } catch (err: any) {
       setError(err.message || 'Error al registrarse');
@@ -32,6 +33,33 @@ const RegisterView: React.FC<RegisterProps> = ({ onLogin, navigate }) => {
       setLoading(false);
     }
   };
+
+  if (success) {
+    return (
+      <div className="flex h-full min-h-screen flex-col bg-white dark:bg-slate-950 px-8 py-12 justify-center items-center text-center relative overflow-hidden">
+        {/* Decorative Glows */}
+        <div className="absolute top-[-10%] left-[-10%] w-64 h-64 bg-primary-500/10 rounded-full blur-[100px]"></div>
+
+        <div className="w-24 h-24 bg-primary-500/10 rounded-full flex items-center justify-center mb-8 animate-bounce">
+          <span className="material-symbols-outlined text-5xl text-primary-500">mark_email_read</span>
+        </div>
+
+        <h1 className="text-3xl font-black text-slate-900 dark:text-white mb-4">¡Casi listo!</h1>
+        <p className="text-slate-400 font-medium leading-relaxed mb-10">
+          Hemos enviado un enlace de confirmación a <br />
+          <span className="text-slate-900 dark:text-white font-bold">{email}</span>. <br />
+          Verifica tu correo para activar tu cuenta.
+        </p>
+
+        <button
+          onClick={() => navigate(ScreenName.LOGIN)}
+          className="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-black py-5 rounded-[2rem] shadow-xl active:scale-95 transition-all"
+        >
+          Volver al Inicio
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-full min-h-screen flex-col bg-white dark:bg-slate-950 px-8 py-12 justify-center relative overflow-hidden">
