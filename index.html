@@ -24,16 +24,48 @@
   <!-- Icons -->
   <link rel="icon" type="image/svg+xml" href="/vite.svg" />
 
-  <!-- Preconnect -->
+  <!-- Resource Hints for Performance -->
+  <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
+  <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="preconnect" href="https://www.google-analytics.com" />
+
+  <!-- Prefetch critical bundles -->
+  <link rel="prefetch" href="/dist/vendor-react.js" as="script" />
 
   <!-- Security Headers -->
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <meta name="format-detection" content="telephone=no" />
+  <meta http-equiv="x-ua-compatible" content="IE=edge" />
 
-  <!-- Splash Screen (opcional) -->
+  <!-- Performance optimization -->
   <meta name="mobile-web-app-status-bar-style" content="black-translucent" />
+
+  <!-- Critical CSS inline (minimal) -->
+  <style>
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+
+    #root {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      body {
+        background: #111827;
+        color: #f9fafb;
+      }
+    }
+  </style>
 </head>
 
 <body>

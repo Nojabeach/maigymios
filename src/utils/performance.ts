@@ -16,7 +16,117 @@ export function initPerformanceMonitoring() {
       console.log("LCP not supported");
     }
   }
+
+  // First Input Delay
+  try {
+    const fidObserver = new PerformanceObserver((list) => {
+      const entries = list.getEntries();
+      entries.forEach((entry: any) => {
+        console.log("FID:", entry.processingDuration);
+      });
+    });
+    fidObserver.observe({ entryTypes: ["first-input"] });
+  } catch (e) {
+    console.log("FID observer not supported");
+  }
+
+  // Cumulative Layout Shift
+  let clsValue = 0;
+  try {
+    const clsObserver = new PerformanceObserver((list) => {
+      const entries = list.getEntries();
+      entries.forEach((entry: any) => {
+        if (!entry.hadRecentInput) {
+          clsValue += entry.value;
+          console.log("CLS:", clsValue);
+        }
+      });
+    });
+    clsObserver.observe({ entryTypes: ["layout-shift"] });
+  } catch (e) {
+    console.log("CLS observer not supported");
+  }
 }
+
+/**
+ * Add resource hints for faster loading
+ */
+export function addResourceHints() {
+  const hints = [
+    // DNS prefetch
+    { rel: "dns-prefetch", href: "https://www.googletagmanager.com" },
+    { rel: "dns-prefetch", href: "https://fonts.googleapis.com" },
+    // Preconnect
+    { rel: "preconnect", href: "https://fonts.googleapis.com" },
+  ];
+
+  hints.forEach(({ rel, href }) => {
+    const link = document.createElement("link");
+    link.rel = rel;
+    link.href = href;
+    document.head.appendChild(link);
+  });
+}
+
+/**
+ * Lazy load images with IntersectionObserver
+ */
+export function lazyLoadImages() {
+  if (!("IntersectionObserver" in window)) return;
+
+  const imageObserver = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (entry.isIntersecting) {
+        const img = entry.target as HTMLImageElement;
+        if (img.dataset.src) {
+          img.src = img.dataset.src;
+          img.removeAttribute("data-src");
+          imageObserver.unobserve(img);
+        }
+      }
+    });
+  });
+
+  document.querySelectorAll("img[data-src]").forEach((img) => {
+    imageObserver.observe(img);
+  });
+}
+
+/**
+ * Defer non-critical JavaScript
+ */
+export function scheduleIdleTask(callback: () => void) {
+  if ("requestIdleCallback" in window) {
+    requestIdleCallback(callback);
+  } else {
+    setTimeout(callback, 1);
+  }
+}
+
+/**
+ * Cache API responses with TTL
+ */
+const responseCache = new Map<string, { data: any; timestamp: number }>();
+
+export const cacheRequest = (
+  key: string,
+  ttl: number = 5 * 60 * 1000 // 5 minutes default
+) => {
+  return {
+    get: () => {
+      const cached = responseCache.get(key);
+      if (cached && Date.now() - cached.timestamp < ttl) {
+        return cached.data;
+      }
+      responseCache.delete(key);
+      return null;
+    },
+    set: (data: any) => {
+      responseCache.set(key, { data, timestamp: Date.now() });
+    },
+    clear: () => responseCache.delete(key),
+  };
+};
 
 /**
  * Debounce para optimizar event listeners
@@ -55,3 +165,42 @@ export function throttle<T extends (...args: any[]) => any>(
     }
   };
 }
+
+/**
+ * Preload critical resources
+ */
+export function preloadCriticalResources() {
+  const criticalResources = [
+    // Add your critical resources here
+    "/index.js",
+    "/index.css",
+  ];
+
+  criticalResources.forEach((href) => {
+    const link = document.createElement("link");
+    link.rel = "preload";
+    link.as = href.endsWith(".css") ? "style" : "script";
+    link.href = href;
+    document.head.appendChild(link);
+  });
+}
+
+/**
+ * Enable code splitting hints
+ */
+export const optimizeCodeSplitting = () => {
+  // Hint to browser to prefetch code that might be needed soon
+  if ("requestIdleCallback" in window) {
+    requestIdleCallback(() => {
+      // Prefetch bundles that are likely to be used
+      const links = ["/dist/vendor-react.js", "/dist/vendor-charts.js"];
+      links.forEach((href) => {
+        const link = document.createElement("link");
+        link.rel = "prefetch";
+        link.href = href;
+        link.as = "script";
+        document.head.appendChild(link);
+      });
+    });
+  }
+};
