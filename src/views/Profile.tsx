@@ -27,6 +27,17 @@ const ProfileView: React.FC<ProfileProps> = ({
   const [caloriesData, setCaloriesData] = useState<any[]>([]);
   const [hydrationData, setHydrationData] = useState<any[]>([]);
 
+  // Profile Edit State
+  const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    full_name: user?.user_metadata?.full_name || user?.user_metadata?.name || '',
+    age: user?.user_metadata?.age || '25',
+    height: user?.user_metadata?.height || '170',
+    weight: user?.user_metadata?.weight || '70',
+    avatar_url: user?.user_metadata?.avatar_url || IMAGES.USER_AVATAR
+  });
+
   useEffect(() => {
     const loadCharts = async () => {
       if (!user?.id) return;
@@ -51,6 +62,29 @@ const ProfileView: React.FC<ProfileProps> = ({
     };
     loadCharts();
   }, [user?.id]);
+
+  const handleUpdateProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.updateUser({
+        data: {
+          full_name: formData.full_name,
+          age: formData.age,
+          height: formData.height,
+          weight: formData.weight,
+        }
+      });
+
+      if (error) throw error;
+      setIsEditing(false);
+      // Note: App.tsx's onAuthStateChange will catch the update and refresh the 'user' prop
+    } catch (err: any) {
+      alert(err.message || "Error al actualizar perfil");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="flex-1 bg-white dark:bg-slate-950 flex flex-col min-h-screen">
@@ -79,36 +113,113 @@ const ProfileView: React.FC<ProfileProps> = ({
           <div className="relative mb-6">
             <div
               className="w-32 h-32 rounded-full bg-center bg-cover border-4 border-white dark:border-slate-900 shadow-2xl ring-4 ring-primary-500/20"
-              style={{ backgroundImage: `url("${IMAGES.USER_AVATAR}")` }}
+              style={{ backgroundImage: `url("${user?.user_metadata?.avatar_url || IMAGES.USER_AVATAR}")` }}
             ></div>
-            <button className="absolute bottom-0 right-0 p-2.5 bg-primary-500 text-white rounded-full shadow-lg border-4 border-white dark:border-slate-900 active:scale-90 transition-all">
-              <span className="material-symbols-outlined text-sm filled">edit</span>
-            </button>
+            {!isEditing && (
+              <button
+                onClick={() => setIsEditing(true)}
+                className="absolute bottom-0 right-0 p-2.5 bg-primary-500 text-white rounded-full shadow-lg border-4 border-white dark:border-slate-900 active:scale-90 transition-all"
+              >
+                <span className="material-symbols-outlined text-sm filled">edit</span>
+              </button>
+            )}
           </div>
 
-          <div className="text-center">
-            <h2 className="text-3xl font-black text-slate-900 dark:text-white leading-tight">Maria González</h2>
-            <div className="flex items-center gap-2 mt-2 justify-center">
-              <span className="text-[10px] font-black text-primary-600 dark:text-primary-400 bg-primary-500/10 px-3 py-1 rounded-full uppercase tracking-tighter ring-1 ring-primary-500/20">Miembro Elite</span>
-              <p className="text-xs font-bold text-slate-400">Unida en 2023</p>
+          {!isEditing ? (
+            <div className="text-center">
+              <h2 className="text-3xl font-black text-slate-900 dark:text-white leading-tight">
+                {user?.user_metadata?.full_name || user?.user_metadata?.name || 'Atleta Vitality'}
+              </h2>
+              <div className="flex items-center gap-2 mt-2 justify-center">
+                <span className="text-[10px] font-black text-primary-600 dark:text-primary-400 bg-primary-500/10 px-3 py-1 rounded-full uppercase tracking-tighter ring-1 ring-primary-500/20">
+                  {user?.app_metadata?.provider === 'google' ? 'Google Connected' : 'Premium Member'}
+                </span>
+                <p className="text-xs font-bold text-slate-400">
+                  Miembro desde {new Date(user?.created_at).getFullYear()}
+                </p>
+              </div>
             </div>
-          </div>
+          ) : (
+            <form onSubmit={handleUpdateProfile} className="w-full flex flex-col gap-4 bg-slate-50 dark:bg-slate-900/50 p-6 rounded-[2.5rem] border border-slate-100 dark:border-slate-800">
+              <div className="space-y-1">
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Nombre Completo</label>
+                <input
+                  type="text"
+                  value={formData.full_name}
+                  onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                  className="w-full bg-white dark:bg-slate-950 border-none rounded-2xl py-3 px-4 text-slate-900 dark:text-white font-bold outline-none focus:ring-2 focus:ring-primary-500/30 transition-all"
+                />
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Edad</label>
+                  <input
+                    type="number"
+                    value={formData.age}
+                    onChange={(e) => setFormData({ ...formData, age: e.target.value })}
+                    className="w-full bg-white dark:bg-slate-950 border-none rounded-2xl py-3 px-4 text-slate-900 dark:text-white font-bold outline-none focus:ring-2 focus:ring-primary-500/30 transition-all text-center"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Altura</label>
+                  <input
+                    type="number"
+                    value={formData.height}
+                    onChange={(e) => setFormData({ ...formData, height: e.target.value })}
+                    className="w-full bg-white dark:bg-slate-950 border-none rounded-2xl py-3 px-4 text-slate-900 dark:text-white font-bold outline-none focus:ring-2 focus:ring-primary-500/30 transition-all text-center"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Peso</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={formData.weight}
+                    onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
+                    className="w-full bg-white dark:bg-slate-950 border-none rounded-2xl py-3 px-4 text-slate-900 dark:text-white font-bold outline-none focus:ring-2 focus:ring-primary-500/30 transition-all text-center"
+                  />
+                </div>
+              </div>
+              <div className="flex gap-3 mt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsEditing(false)}
+                  className="flex-1 py-3 rounded-2xl bg-slate-200 dark:bg-slate-800 text-slate-900 dark:text-white font-black text-xs uppercase tracking-widest"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="flex-3 py-3 rounded-2xl bg-primary-500 text-white font-black text-xs uppercase tracking-widest shadow-lg shadow-primary-500/20"
+                >
+                  {loading ? 'Guardando...' : 'Guardar Cambios'}
+                </button>
+              </div>
+            </form>
+          )}
         </section>
 
         {/* Metrics Grid */}
         <section className="grid grid-cols-2 gap-4">
           <div className="card-premium p-5 flex flex-col gap-1 items-center text-center">
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Edad</p>
-            <h3 className="text-2xl font-black text-slate-900 dark:text-white">52 <span className="text-xs opacity-50 font-bold">años</span></h3>
+            <h3 className="text-2xl font-black text-slate-900 dark:text-white">
+              {user?.user_metadata?.age || '—'} <span className="text-xs opacity-50 font-bold">años</span>
+            </h3>
           </div>
           <div className="card-premium p-5 flex flex-col gap-1 items-center text-center">
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Altura</p>
-            <h3 className="text-2xl font-black text-slate-900 dark:text-white">165 <span className="text-xs opacity-50 font-bold">cm</span></h3>
+            <h3 className="text-2xl font-black text-slate-900 dark:text-white">
+              {user?.user_metadata?.height || '—'} <span className="text-xs opacity-50 font-bold">cm</span>
+            </h3>
           </div>
           <div className="col-span-2 card-premium p-6 flex flex-col items-center gap-4 relative overflow-hidden group">
             <div className="flex flex-col items-center">
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Peso Actual</p>
-              <h3 className="text-4xl font-black text-slate-900 dark:text-white tabular-nums">68.5 <span className="text-lg opacity-30 font-bold">kg</span></h3>
+              <h3 className="text-4xl font-black text-slate-900 dark:text-white tabular-nums">
+                {user?.user_metadata?.weight || '—'} <span className="text-lg opacity-30 font-bold">kg</span>
+              </h3>
             </div>
             <div className="flex gap-4">
               <button className="w-12 h-12 rounded-2xl bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white flex items-center justify-center shadow-soft active:scale-90 transition-all">

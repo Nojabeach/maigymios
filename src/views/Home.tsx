@@ -6,9 +6,12 @@ import { supabase } from "../supabaseClient";
 interface HomeProps {
   stats: UserStats;
   navigate: (screen: ScreenName) => void;
+  user: any;
 }
 
-const HomeView: React.FC<HomeProps> = ({ stats, navigate }) => {
+
+const HomeView: React.FC<HomeProps> = ({ stats, navigate, user }) => {
+
   const [greeting, setGreeting] = useState("Buenos días");
   const [fastingSession, setFastingSession] = useState<any>(null);
   const [fastingElapsed, setFastingElapsed] = useState({ h: 0, m: 0, s: 0 });
@@ -89,8 +92,9 @@ const HomeView: React.FC<HomeProps> = ({ stats, navigate }) => {
           <div className="relative">
             <div
               className="w-11 h-11 rounded-full bg-center bg-cover border-2 border-primary-500 shadow-sm ring-4 ring-primary-500/10"
-              style={{ backgroundImage: `url("${IMAGES.USER_AVATAR}")` }}
+              style={{ backgroundImage: `url("${user?.user_metadata?.avatar_url || IMAGES.USER_AVATAR}")` }}
             ></div>
+
             <div className="absolute bottom-0 right-0 w-3 h-3 bg-primary-500 rounded-full border-2 border-white dark:border-slate-950"></div>
           </div>
           <div>
@@ -98,8 +102,9 @@ const HomeView: React.FC<HomeProps> = ({ stats, navigate }) => {
               {greeting}
             </p>
             <h2 className="text-lg font-extrabold text-slate-900 dark:text-white leading-tight">
-              Hola, Maria
+              Hola, {user?.user_metadata?.full_name?.split(' ')[0] || user?.user_metadata?.name || 'Atleta'}
             </h2>
+
           </div>
         </div>
         <div className="flex items-center gap-2">

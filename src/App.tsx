@@ -268,7 +268,7 @@ export default function App() {
   const renderScreen = () => {
     switch (currentScreen) {
       case ScreenName.HOME:
-        return <HomeView stats={stats} navigate={navigate} />;
+        return <HomeView stats={stats} navigate={navigate} user={user} />;
       case ScreenName.WORKOUT:
         return <WorkoutView navigate={navigate} />;
       case ScreenName.WORKOUT_DETAIL:
@@ -314,7 +314,7 @@ export default function App() {
       case ScreenName.CHAT:
         return <ChatView navigate={navigate} />;
       default:
-        return <HomeView stats={stats} navigate={navigate} />;
+        return <HomeView stats={stats} navigate={navigate} user={user} />;
     }
   };
 
