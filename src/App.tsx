@@ -8,6 +8,7 @@ import {
   engagementAnalytics,
 } from "./utils/analytics";
 import { initSentry, monitorPerformance } from "./utils/errorTracking";
+import { offlineSyncService } from "./utils/offlineSync";
 import HomeView from "./views/Home";
 import WorkoutView from "./views/Workout";
 import WorkoutDetailView from "./views/WorkoutDetail";
@@ -24,6 +25,7 @@ import LoginView from "./views/Login";
 import RegisterView from "./views/Register";
 import ForgotPasswordView from "./views/ForgotPassword";
 import BottomNav from "./components/BottomNav";
+import { OfflineStatusBadge } from "./components/OfflineStatus";
 
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState<ScreenName>(
@@ -66,6 +68,11 @@ export default function App() {
 
     // 1. Initialize Service Worker for notifications
     initServiceWorker().catch((err) => console.log("SW init warning:", err));
+
+    // 1b. Initialize Offline Sync
+    offlineSyncService
+      .initialize()
+      .catch((err) => console.log("Offline sync init warning:", err));
 
     // 1. LocalStorage Fast Load (Immediate UI feedback)
     const savedStats = localStorage.getItem("vitality_user_stats");
@@ -349,12 +356,8 @@ export default function App() {
     <div className="relative flex h-full min-h-screen w-full flex-col bg-white dark:bg-background-dark overflow-x-hidden">
       {/* Container responsivo para iPhone y iPad */}
       <div className="flex flex-col h-full w-full md:max-w-4xl md:mx-auto md:bg-surface-light dark:md:bg-surface-dark md:shadow-xl md:rounded-2xl overflow-hidden">
-        {/* Offline Banner */}
-        {isOffline && (
-          <div className="bg-red-500 text-white text-xs py-2 px-4 text-center font-semibold sticky top-0 z-[60] animate-pulse">
-            📡 Sin conexión. Guardando localmente.
-          </div>
-        )}
+        {/* Offline Status Banner */}
+        <OfflineStatusBadge variant="banner" />
 
         <main
           className={`flex-1 flex flex-col bg-white dark:bg-background-dark transition-smooth ${
