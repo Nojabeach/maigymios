@@ -312,7 +312,7 @@ export default function App() {
       case ScreenName.SETTINGS:
         return <SettingsView navigate={navigate} />;
       case ScreenName.CHAT:
-        return <ChatView navigate={navigate} />;
+        return <ChatView navigate={navigate} user={user} />;
       default:
         return <HomeView stats={stats} navigate={navigate} user={user} />;
     }

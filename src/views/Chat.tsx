@@ -6,6 +6,7 @@ import { supabase } from "../supabaseClient";
 
 interface ChatProps {
   navigate: (screen: ScreenName) => void;
+  user?: any;
 }
 
 interface Message {
@@ -15,7 +16,8 @@ interface Message {
   time: string;
 }
 
-const ChatView: React.FC<ChatProps> = ({ navigate }) => {
+const ChatView: React.FC<ChatProps> = ({ navigate, user }) => {
+
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -41,9 +43,10 @@ const ChatView: React.FC<ChatProps> = ({ navigate }) => {
           time: new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         })));
       } else {
+        const userName = user?.user_metadata?.full_name?.split(' ')[0] || user?.user_metadata?.name || 'Atleta';
         setMessages([{
           id: "1",
-          text: "¡Hola Maria! 👋 Soy tu coach Vitality. He analizado tus estadísticas recientes y estoy lista para ayudarte a optimizar tu día. ¿En qué puedo apoyarte hoy?",
+          text: `¡Hola ${userName}! 👋 Soy tu coach Vitality. He analizado tus estadísticas recientes y estoy lista para ayudarte a optimizar tu día. ¿En qué puedo apoyarte hoy?`,
           sender: "ai",
           time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         }]);
@@ -90,7 +93,8 @@ const ChatView: React.FC<ChatProps> = ({ navigate }) => {
       if (!apiKey) throw new Error("API Key missing");
       const ai = new GoogleGenAI({ apiKey });
 
-      const systemInstruction = `Eres "Vitality Coach", una IA experta en salud. Usuario: Maria. Stats: ${JSON.stringify(stats)}. Sé motivadora, breve y usa emojis.`;
+      const userName = user?.user_metadata?.full_name || user?.user_metadata?.name || 'el usuario';
+      const systemInstruction = `Eres "Vitality Coach", una IA experta en salud y fitness. El usuario se llama ${userName}. Sus estadísticas actuales: ${JSON.stringify(stats)}. Sé motivadora, concisa (máximo 3 líneas) y usa emojis ocasionalmente. Habla en español.`;
 
       const response = await ai.models.generateContent({
         model: "gemini-2.5-flash-latest",
@@ -114,8 +118,17 @@ const ChatView: React.FC<ChatProps> = ({ navigate }) => {
 
       setMessages((prev) => [...prev, aiMsg]);
       saveMessage(aiText, 'assistant').catch(console.error);
-    } catch (error) {
-      console.error(error);
+    } catch (error: any) {
+      console.error('Chat AI Error:', error);
+      const errorMsg: Message = {
+        id: (Date.now() + 1).toString(),
+        text: error?.message?.includes('API Key')
+          ? '⚠️ No puedo responder ahora. Falta configurar la API key de Google AI en el archivo .env.local (revisa API_KEYS_SETUP_GUIDE.md)'
+          : '😅 Ups, tuve un pequeño problema técnico. ¿Puedes repetir tu pregunta?',
+        sender: "ai",
+        time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      };
+      setMessages((prev) => [...prev, errorMsg]);
     } finally {
       setIsLoading(false);
     }
@@ -158,8 +171,8 @@ const ChatView: React.FC<ChatProps> = ({ navigate }) => {
           <div key={msg.id} className={`flex w-full ${msg.sender === "user" ? "justify-end" : "justify-start"}`}>
             <div className={`max-w-[85%] flex flex-col ${msg.sender === "user" ? "items-end" : "items-start"}`}>
               <div className={`p-4 rounded-[1.5rem] text-[15px] font-medium leading-relaxed shadow-soft ${msg.sender === "user"
-                  ? "bg-primary-500 text-white rounded-tr-none"
-                  : "bg-white dark:bg-slate-900 text-slate-900 dark:text-white border border-slate-100 dark:border-slate-800 rounded-tl-none"
+                ? "bg-primary-500 text-white rounded-tr-none"
+                : "bg-white dark:bg-slate-900 text-slate-900 dark:text-white border border-slate-100 dark:border-slate-800 rounded-tl-none"
                 }`}>
                 {msg.text}
               </div>
