@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { GoogleGenAI } from "@google/genai";
+import React, { useState, useEffect, useRef } from "react";
 import { ScreenName } from "../types";
 import { IMAGES } from "../constants";
 import { supabase } from "../supabaseClient";
@@ -17,7 +17,6 @@ interface Message {
 }
 
 const ChatView: React.FC<ChatProps> = ({ navigate, user }) => {
-
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -25,7 +24,9 @@ const ChatView: React.FC<ChatProps> = ({ navigate, user }) => {
 
   useEffect(() => {
     const loadHistory = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
 
       const { data } = await supabase
@@ -36,20 +37,33 @@ const ChatView: React.FC<ChatProps> = ({ navigate, user }) => {
         .limit(50);
 
       if (data && data.length > 0) {
-        setMessages(data.map((msg: any) => ({
-          id: msg.id,
-          text: msg.content,
-          sender: msg.role === "assistant" ? "ai" : "user",
-          time: new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        })));
+        setMessages(
+          data.map((msg: any) => ({
+            id: msg.id,
+            text: msg.content,
+            sender: msg.role === "assistant" ? "ai" : "user",
+            time: new Date(msg.created_at).toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+          }))
+        );
       } else {
-        const userName = user?.user_metadata?.full_name?.split(' ')[0] || user?.user_metadata?.name || 'Atleta';
-        setMessages([{
-          id: "1",
-          text: `¡Hola ${userName}! 👋 Soy tu coach Vitality. He analizado tus estadísticas recientes y estoy lista para ayudarte a optimizar tu día. ¿En qué puedo apoyarte hoy?`,
-          sender: "ai",
-          time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-        }]);
+        const userName =
+          user?.user_metadata?.full_name?.split(" ")[0] ||
+          user?.user_metadata?.name ||
+          "Atleta";
+        setMessages([
+          {
+            id: "1",
+            text: `¡Hola ${userName}! 👋 Soy tu coach Vitality. He analizado tus estadísticas recientes y estoy lista para ayudarte a optimizar tu día. ¿En qué puedo apoyarte hoy?`,
+            sender: "ai",
+            time: new Date().toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+          },
+        ]);
       }
     };
     loadHistory();
@@ -59,14 +73,16 @@ const ChatView: React.FC<ChatProps> = ({ navigate, user }) => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isLoading]);
 
-  const saveMessage = async (text: string, role: 'user' | 'assistant') => {
-    const { data: { user } } = await supabase.auth.getUser();
+  const saveMessage = async (text: string, role: "user" | "assistant") => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) return;
     await supabase.from("chat_messages").insert({
       user_id: user.id,
       content: text,
       role: role,
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
     });
   };
 
@@ -78,55 +94,76 @@ const ChatView: React.FC<ChatProps> = ({ navigate, user }) => {
       id: Date.now().toString(),
       text: userText,
       sender: "user",
-      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      time: new Date().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
     };
 
     setMessages((prev) => [...prev, userMsg]);
     setInputText("");
     setIsLoading(true);
-    saveMessage(userText, 'user').catch(console.error);
+    saveMessage(userText, "user").catch(console.error);
 
     try {
       const savedStats = localStorage.getItem("vitality_user_stats");
-      const stats = savedStats ? JSON.parse(savedStats) : { calories: 0, hydrationCurrent: 0 };
-      const apiKey = import.meta.env.VITE_GOOGLE_API_KEY;
-      if (!apiKey) throw new Error("API Key missing");
-      const ai = new GoogleGenAI({ apiKey });
+      const stats = savedStats
+        ? JSON.parse(savedStats)
+        : { calories: 0, hydrationCurrent: 0 };
 
-      const userName = user?.user_metadata?.full_name || user?.user_metadata?.name || 'el usuario';
-      const systemInstruction = `Eres "Vitality Coach", una IA experta en salud y fitness. El usuario se llama ${userName}. Sus estadísticas actuales: ${JSON.stringify(stats)}. Sé motivadora, concisa (máximo 3 líneas) y usa emojis ocasionalmente. Habla en español.`;
+      const userName =
+        user?.user_metadata?.full_name ||
+        user?.user_metadata?.name ||
+        "el usuario";
 
-      const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash-latest",
-        contents: [
-          ...messages.slice(-6).map((m) => ({
-            role: m.sender === "user" ? "user" : "model",
-            parts: [{ text: m.text }],
+      // Llamada a la Supabase Edge Function 'chat-ai' que actúa como proxy seguro hacia la API de Google
+      const payload = {
+        messages: messages
+          .slice(-6)
+          .map((m) => ({
+            role: m.sender === "user" ? "user" : "assistant",
+            text: m.text,
           })),
-          { role: "user", parts: [{ text: userText }] },
-        ],
-        config: { systemInstruction },
+        userText,
+        stats,
+        userName,
+      };
+
+      // Usamos supabase.functions.invoke para ejecutar la Edge Function
+      const { data, error } = await supabase.functions.invoke("chat-ai", {
+        body: JSON.stringify(payload),
       });
 
-      const aiText = response.text || "Tuve un pequeño problema. Repite eso, por favor.";
+      if (error) throw error;
+
+      // La función devuelve { text: string }
+      const aiText =
+        (data && (data as any).text) ||
+        "Tuve un pequeño problema. Repite eso, por favor.";
       const aiMsg: Message = {
         id: (Date.now() + 1).toString(),
         text: aiText,
         sender: "ai",
-        time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        time: new Date().toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
       };
 
       setMessages((prev) => [...prev, aiMsg]);
-      saveMessage(aiText, 'assistant').catch(console.error);
+      saveMessage(aiText, "assistant").catch(console.error);
     } catch (error: any) {
-      console.error('Chat AI Error:', error);
+      console.error("Chat AI Error:", error);
       const errorMsg: Message = {
         id: (Date.now() + 1).toString(),
-        text: error?.message?.includes('API Key')
-          ? '⚠️ No puedo responder ahora. Falta configurar la API key de Google AI en el archivo .env.local (revisa API_KEYS_SETUP_GUIDE.md)'
-          : '😅 Ups, tuve un pequeño problema técnico. ¿Puedes repetir tu pregunta?',
+        text: error?.message?.includes("API Key")
+          ? "⚠️ No puedo responder ahora. Falta configurar la API key de Google AI en el archivo .env.local (revisa API_KEYS_SETUP_GUIDE.md)"
+          : "😅 Ups, tuve un pequeño problema técnico. ¿Puedes repetir tu pregunta?",
         sender: "ai",
-        time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        time: new Date().toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
       };
       setMessages((prev) => [...prev, errorMsg]);
     } finally {
@@ -154,8 +191,12 @@ const ChatView: React.FC<ChatProps> = ({ navigate, user }) => {
               <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-primary-500 rounded-full border-2 border-white dark:border-slate-900"></div>
             </div>
             <div>
-              <h2 className="text-base font-black text-slate-900 dark:text-white leading-none mb-1">Coach Vitality</h2>
-              <p className="text-[10px] font-bold text-primary-500 uppercase tracking-widest">En línea</p>
+              <h2 className="text-base font-black text-slate-900 dark:text-white leading-none mb-1">
+                Coach Vitality
+              </h2>
+              <p className="text-[10px] font-bold text-primary-500 uppercase tracking-widest">
+                En línea
+              </p>
             </div>
           </div>
         </div>
@@ -164,19 +205,35 @@ const ChatView: React.FC<ChatProps> = ({ navigate, user }) => {
       {/* Chat Messages */}
       <main className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/30 dark:bg-slate-950/30">
         <div className="flex justify-center mb-8">
-          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-100 dark:bg-slate-900 px-4 py-1.5 rounded-full">Hoy</span>
+          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-100 dark:bg-slate-900 px-4 py-1.5 rounded-full">
+            Hoy
+          </span>
         </div>
 
         {messages.map((msg) => (
-          <div key={msg.id} className={`flex w-full ${msg.sender === "user" ? "justify-end" : "justify-start"}`}>
-            <div className={`max-w-[85%] flex flex-col ${msg.sender === "user" ? "items-end" : "items-start"}`}>
-              <div className={`p-4 rounded-[1.5rem] text-[15px] font-medium leading-relaxed shadow-soft ${msg.sender === "user"
-                ? "bg-primary-500 text-white rounded-tr-none"
-                : "bg-white dark:bg-slate-900 text-slate-900 dark:text-white border border-slate-100 dark:border-slate-800 rounded-tl-none"
-                }`}>
+          <div
+            key={msg.id}
+            className={`flex w-full ${
+              msg.sender === "user" ? "justify-end" : "justify-start"
+            }`}
+          >
+            <div
+              className={`max-w-[85%] flex flex-col ${
+                msg.sender === "user" ? "items-end" : "items-start"
+              }`}
+            >
+              <div
+                className={`p-4 rounded-[1.5rem] text-[15px] font-medium leading-relaxed shadow-soft ${
+                  msg.sender === "user"
+                    ? "bg-primary-500 text-white rounded-tr-none"
+                    : "bg-white dark:bg-slate-900 text-slate-900 dark:text-white border border-slate-100 dark:border-slate-800 rounded-tl-none"
+                }`}
+              >
                 {msg.text}
               </div>
-              <span className="text-[10px] font-bold text-slate-300 mt-2 px-1 uppercase tracking-tighter">{msg.time}</span>
+              <span className="text-[10px] font-bold text-slate-300 mt-2 px-1 uppercase tracking-tighter">
+                {msg.time}
+              </span>
             </div>
           </div>
         ))}
@@ -204,16 +261,21 @@ const ChatView: React.FC<ChatProps> = ({ navigate, user }) => {
             placeholder="Pregúntale a tu coach..."
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+            onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
             disabled={isLoading}
           />
           <button
             onClick={handleSendMessage}
             disabled={!inputText.trim() || isLoading}
-            className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${inputText.trim() ? "bg-primary-500 text-white shadow-lg shadow-primary-500/30 scale-100" : "text-slate-300 scale-90"
-              }`}
+            className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
+              inputText.trim()
+                ? "bg-primary-500 text-white shadow-lg shadow-primary-500/30 scale-100"
+                : "text-slate-300 scale-90"
+            }`}
           >
-            <span className="material-symbols-outlined text-[20px] ml-0.5">send</span>
+            <span className="material-symbols-outlined text-[20px] ml-0.5">
+              send
+            </span>
           </button>
         </div>
       </footer>
