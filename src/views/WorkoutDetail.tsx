@@ -1,17 +1,37 @@
 import React from 'react';
 import { ScreenName } from '../types';
 import { IMAGES } from '../constants';
+import { supabase } from '../supabaseClient';
 
 interface WorkoutDetailProps {
   navigate: (screen: ScreenName) => void;
 }
 
 const WorkoutDetailView: React.FC<WorkoutDetailProps> = ({ navigate }) => {
+  const handleComplete = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.from('workouts').insert({
+          user_id: user.id,
+          exercise_name: 'Sentadilla Asistida',
+          duration_minutes: 2,
+          calories_burned: 5,
+          intensity: 'moderate',
+          date: new Date().toISOString().split('T')[0]
+        });
+      }
+    } catch (e) {
+      console.error("Error saving exercise:", e);
+    }
+    navigate(ScreenName.WORKOUT);
+  };
+
   return (
     <div className="relative flex min-h-screen w-full flex-col bg-background-light dark:bg-background-dark">
       {/* Header */}
       <header className="sticky top-0 z-20 flex items-center justify-between bg-background-light/95 dark:bg-background-dark/95 backdrop-blur-sm p-4 pb-2">
-        <button 
+        <button
           className="flex size-10 items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors text-neutral-900 dark:text-white"
           onClick={() => navigate(ScreenName.WORKOUT)}
         >
@@ -26,16 +46,16 @@ const WorkoutDetailView: React.FC<WorkoutDetailProps> = ({ navigate }) => {
       <main className="flex-1 pb-32">
         {/* Video Player Placeholder */}
         <div className="w-full relative group">
-          <div className="relative w-full aspect-[4/3] bg-neutral-900 flex items-center justify-center overflow-hidden" 
-               style={{ 
-                 backgroundImage: `linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), url("${IMAGES.EXERCISE_SQUAT}")`,
-                 backgroundSize: 'cover',
-                 backgroundPosition: 'center'
-               }}>
+          <div className="relative w-full aspect-[4/3] bg-neutral-900 flex items-center justify-center overflow-hidden"
+            style={{
+              backgroundImage: `linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), url("${IMAGES.EXERCISE_SQUAT}")`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center'
+            }}>
             <button className="flex shrink-0 items-center justify-center rounded-full size-16 bg-primary/90 text-neutral-900 hover:scale-105 transition-transform shadow-lg shadow-primary/20 backdrop-blur-sm">
               <span className="material-symbols-outlined filled text-3xl">play_arrow</span>
             </button>
-            
+
             <div className="absolute inset-x-0 bottom-0 px-4 py-3 bg-gradient-to-t from-black/80 to-transparent">
               <div className="flex h-1.5 items-center justify-center gap-1 mb-2 w-full cursor-pointer group/progress">
                 <div className="h-full flex-1 rounded-full bg-primary shadow-[0_0_10px_rgba(19,236,19,0.5)]"></div>
@@ -75,7 +95,7 @@ const WorkoutDetailView: React.FC<WorkoutDetailProps> = ({ navigate }) => {
           <h3 className="text-neutral-900 dark:text-white text-lg font-bold mb-3">Técnica Correcta</h3>
           <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-6 relative">
             <div className="absolute left-[11px] top-2 bottom-8 w-0.5 bg-neutral-200 dark:bg-neutral-800"></div>
-            
+
             <div className="relative z-10">
               <div className="size-6 rounded-full bg-primary text-neutral-900 flex items-center justify-center text-xs font-bold shadow-sm">1</div>
             </div>
@@ -114,9 +134,9 @@ const WorkoutDetailView: React.FC<WorkoutDetailProps> = ({ navigate }) => {
             <span className="material-symbols-outlined">skip_previous</span>
             <span className="text-[10px] font-medium">Anterior</span>
           </button>
-          <button 
+          <button
             className="flex-1 bg-primary text-neutral-900 font-bold text-lg h-14 rounded-xl shadow-[0_4px_14px_rgba(19,236,19,0.4)] flex items-center justify-center gap-2 hover:bg-[#0fdc0f] transition-colors active:scale-[0.98]"
-            onClick={() => navigate(ScreenName.WORKOUT)}
+            onClick={handleComplete}
           >
             ¡Buen trabajo! Siguiente
             <span className="material-symbols-outlined">arrow_forward</span>

@@ -27,7 +27,7 @@ export async function initServiceWorker() {
       const registration = await navigator.serviceWorker.register("/sw.js", {
         scope: "/",
       });
-      console.log("✅ Service Worker registrado:", registration.scope);
+      if (import.meta.env.DEV) console.log("✅ Service Worker registrado:", registration.scope);
 
       // Escuchar mensajes del Service Worker
       navigator.serviceWorker.addEventListener(
@@ -216,7 +216,7 @@ function handleServiceWorkerMessage(event: MessageEvent) {
       handleNotificationClosed(payload);
       break;
     default:
-      console.log("Mensaje desconocido del Service Worker:", type);
+      if (import.meta.env.DEV) console.log("Mensaje desconocido del Service Worker:", type);
   }
 }
 
@@ -230,14 +230,14 @@ function handleNotificationClick(data: Record<string, any>) {
   } else if (data.action === "open-workout") {
     window.location.hash = "#/workout";
   }
-  console.log("Notificación clickeada:", data);
+  if (import.meta.env.DEV) console.log("Notificación clickeada:", data);
 }
 
 /**
  * Manejar cierre de notificación
  */
 function handleNotificationClosed(data: Record<string, any>) {
-  console.log("Notificación cerrada:", data);
+  if (import.meta.env.DEV) console.log("Notificación cerrada:", data);
 }
 
 /**

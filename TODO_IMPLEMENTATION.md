@@ -205,11 +205,11 @@ useEffect(() => {
 
 **Checklist:**
 
-- [ ] Reemplazar `weeklyProgressData` mock
-- [ ] Reemplazar `caloriesData` mock
-- [ ] Reemplazar `hydrationData` mock
-- [ ] Verificar que useEffect carga datos
-- [ ] Test: Gráficos muestran datos reales o vacíos (si no hay datos)
+- [x] Reemplazar `weeklyProgressData` mock
+- [x] Reemplazar `caloriesData` mock
+- [x] Reemplazar `hydrationData` mock
+- [x] Verificar que useEffect carga datos
+- [x] Test: Gráficos muestran datos reales o vacíos (si no hay datos)
 
 ---
 
@@ -255,10 +255,10 @@ async getSteps(days: number = 7): Promise<HealthDataPoint[]> {
 
 **Checklist:**
 
-- [ ] Eliminar todos los generadores mock
-- [ ] Eliminar propiedades `mockSteps`, `mockHeartRate`, `mockSleep`, `mockWorkouts`
-- [ ] Reemplazar métodos con llamadas a Supabase
-- [ ] Test: Health Dashboard carga datos o muestra vacío
+- [x] Eliminar todos los generadores mock
+- [x] Eliminar propiedades `mockSteps`, `mockHeartRate`, `mockSleep`, `mockWorkouts`
+- [x] Reemplazar métodos con llamadas a Supabase
+- [x] Test: Health Dashboard carga datos o muestra vacío
 
 ---
 
@@ -302,9 +302,9 @@ const handleAddMeal = async (e: React.FormEvent) => {
 
 **Checklist:**
 
-- [ ] Cambiar `alert()` por insert en Supabase
-- [ ] Capturar errores correctamente
-- [ ] Test: Comida guardada persiste después de recargar
+- [x] Cambiar `alert()` por insert en Supabase
+- [x] Capturar errores correctamente
+- [x] Test: Comida guardada persiste después de recargar
 
 ---
 
@@ -337,9 +337,9 @@ const handleAddWater = async (amount: number) => {
 
 **Checklist:**
 
-- [ ] Botones de agua guardan en `hydration_logs`
-- [ ] Estado del usuario se actualiza
-- [ ] Test: Logs persisten
+- [x] Botones de agua guardan en `hydration_logs`
+- [x] Estado del usuario se actualiza
+- [x] Test: Logs persisten
 
 ---
 
@@ -383,10 +383,10 @@ useEffect(() => {
 
 **Checklist:**
 
-- [ ] Cargar sesión activa de BD
-- [ ] Eliminar hardcodes de horas
-- [ ] Mostrar protocolo real del usuario
-- [ ] Test: Fasting timer muestra datos actuales
+- [x] Cargar sesión activa de BD
+- [x] Eliminar hardcodes de horas
+- [x] Mostrar protocolo real del usuario
+- [x] Test: Fasting timer muestra datos actuales
 
 ---
 
@@ -442,10 +442,10 @@ useEffect(() => {
 
 **Checklist:**
 
-- [ ] Guardar mensajes en BD
-- [ ] Cargar historial al abrir Chat
-- [ ] Mostrar historial en UI
-- [ ] Test: Chat persiste después de cerrar app
+- [x] Guardar mensajes en BD
+- [x] Cargar historial al abrir Chat
+- [x] Mostrar historial en UI
+- [x] Test: Chat persiste después de cerrar app
 
 ---
 
@@ -503,10 +503,10 @@ useEffect(() => {
 
 **Checklist:**
 
-- [ ] Cargar stats después de auth
-- [ ] Usar valores reales del usuario
-- [ ] Fallback a defaults si no hay datos
-- [ ] Test: Stats son del usuario logueado
+- [x] Cargar stats después de auth
+- [x] Usar valores reales del usuario
+- [x] Fallback a defaults si no hay datos
+- [x] Test: Stats son del usuario logueado
 
 ---
 
@@ -521,16 +521,17 @@ useEffect(() => {
 rm src/vite.config.ts       # Usar solo root vite.config.ts
 rm src/tsconfig.json        # Usar solo root tsconfig.json
 rm src/manifest.json        # Usar solo public/manifest.json
+rm src/index.tsx            # Archivo duplicado/antiguo (se usa main.tsx)
 # Verificar y eliminar si existe:
 rm src/package.json
 ```
 
 **Checklist:**
 
-- [ ] `src/vite.config.ts` eliminado
-- [ ] `src/tsconfig.json` eliminado
-- [ ] `src/manifest.json` eliminado
-- [ ] Build sigue funcionando
+- [x] `src/vite.config.ts` eliminado
+- [x] `src/tsconfig.json` eliminado
+- [x] `src/manifest.json` eliminado
+- [x] Build sigue funcionando
 
 ---
 
@@ -560,10 +561,10 @@ if (import.meta.env.DEV) {
 
 **Checklist:**
 
-- [ ] Cambiar 7 logs en performance.ts
-- [ ] Cambiar 10+ logs en offlineSync.ts
-- [ ] Cambiar 4 logs en notifications.ts
-- [ ] Build sin warnings
+- [x] Cambiar 7 logs en performance.ts
+- [x] Cambiar 10+ logs en offlineSync.ts
+- [x] Cambiar 4 logs en notifications.ts
+- [x] Build sin warnings
 
 ---
 

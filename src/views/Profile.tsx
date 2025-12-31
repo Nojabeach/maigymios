@@ -11,45 +11,51 @@ interface ProfileProps {
   navigate: (screen: ScreenName) => void;
   toggleDarkMode: () => void;
   onLogout: () => void;
+  /* eslint-disable @typescript-eslint/no-explicit-any */
+  user: any;
 }
+
+import { supabase } from "../supabaseClient";
+import { useEffect } from "react";
 
 const ProfileView: React.FC<ProfileProps> = ({
   navigate,
   toggleDarkMode,
   onLogout,
+  user,
 }) => {
   const [showHistory, setShowHistory] = useState(false);
+  const [weeklyProgressData, setWeeklyProgressData] = useState<any[]>([]);
+  const [caloriesData, setCaloriesData] = useState<any[]>([]);
+  const [hydrationData, setHydrationData] = useState<any[]>([]);
 
-  // Mock data para gráficos
-  const weeklyProgressData = [
-    { date: "Lun", value: 45 },
-    { date: "Mar", value: 48 },
-    { date: "Mié", value: 52 },
-    { date: "Jue", value: 50 },
-    { date: "Vie", value: 55 },
-    { date: "Sáb", value: 58 },
-    { date: "Dom", value: 60 },
-  ];
+  useEffect(() => {
+    const loadCharts = async () => {
+      if (!user?.id) return;
 
-  const caloriesData = [
-    { date: "Lun", value: 1800 },
-    { date: "Mar", value: 1950 },
-    { date: "Mié", value: 2100 },
-    { date: "Jue", value: 1850 },
-    { date: "Vie", value: 2050 },
-    { date: "Sáb", value: 2200 },
-    { date: "Dom", value: 1900 },
-  ];
+      const { data: stats } = await supabase
+        .from("user_stats")
+        .select("*")
+        .eq("user_id", user.id)
+        .gte("date", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
+        .order("date", { ascending: true });
 
-  const hydrationData = [
-    { date: "Lun", value: 2.0 },
-    { date: "Mar", value: 2.3 },
-    { date: "Mié", value: 2.5 },
-    { date: "Jue", value: 2.1 },
-    { date: "Vie", value: 2.4 },
-    { date: "Sáb", value: 2.6 },
-    { date: "Dom", value: 2.2 },
-  ];
+      if (stats) {
+        // Map stats to chart format
+        const mapData = (key: string) => stats.map(s => ({
+          date: new Date(s.date).toLocaleDateString("es-ES", { weekday: "short" }),
+          value: s[key] || 0
+        }));
+
+        setWeeklyProgressData(mapData("activity_minutes")); // Assuming progress = activity for now
+        setCaloriesData(mapData("calories"));
+        setHydrationData(mapData("hydration_liters"));
+      }
+    };
+    loadCharts();
+  }, [user?.id]);
+
+
 
   return (
     <div className="relative flex h-full flex-col bg-surface-light dark:bg-background-dark">

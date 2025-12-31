@@ -1,4 +1,5 @@
 import { ScreenName, type UserStats } from "../types";
+import { supabase } from "../supabaseClient";
 
 interface HydrationProps {
   stats: UserStats;
@@ -18,6 +19,27 @@ const HydrationView: React.FC<HydrationProps> = ({
   const radius = 45;
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference - (percentage / 100) * circumference;
+
+  const handleAddWater = async (amount: number) => {
+    // 1. Update UI immediately (Optimistic)
+    updateHydration(amount);
+
+    try {
+      // 2. Persist log
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { error } = await supabase.from("hydration_logs").insert({
+          user_id: user.id,
+          amount_liters: amount,
+          date: new Date().toISOString().split("T")[0],
+          time: new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' })
+        });
+        if (error) console.error("Error logging hydration:", error);
+      }
+    } catch (err) {
+      console.error("Error in handleAddWater:", err);
+    }
+  };
 
   return (
     <div className="relative flex h-full flex-col">
@@ -44,7 +66,7 @@ const HydrationView: React.FC<HydrationProps> = ({
         {/* Header */}
         <div className="flex flex-col items-center pt-2">
           <h2 className="text-text-main dark:text-white text-2xl font-bold text-center">
-            ¡Sigue así, Maria!
+            {stats.hydrationCurrent >= stats.hydrationGoal ? "¡Objetivo Cumplido!" : "¡Sigue así!"}
           </h2>
           <p className="text-text-sub dark:text-gray-400 text-sm font-medium mt-1">
             Has alcanzado el {percentage}% de tu meta hoy
@@ -99,7 +121,7 @@ const HydrationView: React.FC<HydrationProps> = ({
         <div className="grid grid-cols-3 gap-3">
           <button
             className="group flex flex-col items-center justify-center gap-2 rounded-xl bg-surface-light dark:bg-surface-dark p-4 shadow-sm border border-transparent hover:border-primary/50 hover:shadow-md active:scale-95 transition-all duration-200"
-            onClick={() => updateHydration(0.25)}
+            onClick={() => handleAddWater(0.25)}
           >
             <div className="size-10 rounded-full bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
               <span className="material-symbols-outlined text-blue-500 dark:text-blue-300 group-hover:text-primary transition-colors">
@@ -113,7 +135,7 @@ const HydrationView: React.FC<HydrationProps> = ({
 
           <button
             className="group flex flex-col items-center justify-center gap-2 rounded-xl bg-surface-light dark:bg-surface-dark p-4 shadow-sm border border-transparent hover:border-primary/50 hover:shadow-md active:scale-95 transition-all duration-200"
-            onClick={() => updateHydration(0.5)}
+            onClick={() => handleAddWater(0.5)}
           >
             <div className="size-10 rounded-full bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
               <span className="material-symbols-outlined text-blue-500 dark:text-blue-300 group-hover:text-primary transition-colors">
@@ -125,7 +147,9 @@ const HydrationView: React.FC<HydrationProps> = ({
             </span>
           </button>
 
-          <button className="group flex flex-col items-center justify-center gap-2 rounded-xl bg-surface-light dark:bg-surface-dark p-4 shadow-sm border border-transparent hover:border-primary/50 hover:shadow-md active:scale-95 transition-all duration-200">
+          <button className="group flex flex-col items-center justify-center gap-2 rounded-xl bg-surface-light dark:bg-surface-dark p-4 shadow-sm border border-transparent hover:border-primary/50 hover:shadow-md active:scale-95 transition-all duration-200"
+            onClick={() => handleAddWater(0.25)}
+          >
             <div className="size-10 rounded-full bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
               <span className="material-symbols-outlined text-amber-600 dark:text-amber-400 group-hover:text-primary transition-colors">
                 local_cafe
@@ -142,31 +166,8 @@ const HydrationView: React.FC<HydrationProps> = ({
           <h3 className="text-text-main dark:text-white font-bold text-base px-1">
             Historial de Hoy
           </h3>
-          <div className="rounded-xl bg-surface-light dark:bg-surface-dark p-0 overflow-hidden shadow-sm">
-            <div className="flex items-center p-3 border-b border-gray-100 dark:border-white/5 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
-              <span className="text-xs font-medium text-text-sub dark:text-gray-400 w-16">
-                10:30 AM
-              </span>
-              <div className="h-2 w-2 rounded-full bg-blue-400 mr-3"></div>
-              <span className="text-sm font-medium text-text-main dark:text-white flex-1">
-                Agua
-              </span>
-              <span className="text-sm font-bold text-text-main dark:text-white">
-                +250ml
-              </span>
-            </div>
-            <div className="flex items-center p-3 border-b border-gray-100 dark:border-white/5 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
-              <span className="text-xs font-medium text-text-sub dark:text-gray-400 w-16">
-                08:15 AM
-              </span>
-              <div className="h-2 w-2 rounded-full bg-amber-500 mr-3"></div>
-              <span className="text-sm font-medium text-text-main dark:text-white flex-1">
-                Té Verde
-              </span>
-              <span className="text-sm font-bold text-text-main dark:text-white">
-                +250ml
-              </span>
-            </div>
+          <div className="rounded-xl bg-surface-light dark:bg-surface-dark p-4 text-center text-text-sub dark:text-gray-400 text-sm shadow-sm">
+            El historial detallado estará disponible próximamente.
           </div>
         </div>
       </div>

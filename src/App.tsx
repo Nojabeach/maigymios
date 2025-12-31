@@ -38,10 +38,10 @@ export default function App() {
 
   // Default stats
   const defaultStats: UserStats = {
-    calories: 1200,
-    activityMin: 35,
-    mindMin: 10,
-    hydrationCurrent: 1.5,
+    calories: 0,
+    activityMin: 0,
+    mindMin: 0,
+    hydrationCurrent: 0,
     hydrationGoal: 2.5,
   };
 
@@ -121,30 +121,36 @@ export default function App() {
   // Fetch from DB
   const fetchStatsFromSupabase = async (userId: string) => {
     try {
-      const { data, error } = await supabase
+      const today = new Date().toISOString().split("T")[0];
+      const { data } = await supabase
         .from("user_stats")
         .select("*")
-        .eq("id", userId)
-        .single();
+        .eq("user_id", userId)
+        .eq("date", today)
+        .maybeSingle();
 
       if (data) {
         const remoteStats: UserStats = {
           calories: data.calories,
-          activityMin: data.activity_min,
-          mindMin: data.mind_min,
-          hydrationCurrent: data.hydration_current,
-          hydrationGoal: data.hydration_goal,
+          activityMin: data.activity_minutes,
+          mindMin: data.mind_minutes,
+          hydrationCurrent: data.hydration_liters || 0, // Map from hydration_liters
+          hydrationGoal: 2.5, // Default or fetch if stored
         };
-        // Only update if different to avoid jitters, or just trust remote
+        // Only update if different to avoid jitters
         setStats(remoteStats);
         localStorage.setItem(
           "vitality_user_stats",
           JSON.stringify(remoteStats)
         );
-      } else if (error && error.code === "PGRST116") {
-        // No row found, insert default
-        console.log("Creating new stats row for user");
-        syncToSupabase(defaultStats, userId);
+      } else {
+        // No row found, insert default for today
+        console.log("Creating new stats row for user today");
+        const newStats = { ...defaultStats };
+        // We set stats to default (0s) but maybe we want to keep hydrationGoal?
+        newStats.hydrationGoal = 2.5;
+        setStats(newStats);
+        syncToSupabase(newStats, userId);
       }
     } catch (error) {
       console.log("Error fetching stats:", error);
@@ -161,7 +167,7 @@ export default function App() {
           event: "UPDATE",
           schema: "public",
           table: "user_stats",
-          filter: `id=eq.${userId}`,
+          filter: `user_id=eq.${userId}`,
         },
         (payload) => {
           console.log("Realtime update received:", payload);
@@ -169,10 +175,10 @@ export default function App() {
           if (newData) {
             const newStats: UserStats = {
               calories: newData.calories,
-              activityMin: newData.activity_min,
-              mindMin: newData.mind_min,
-              hydrationCurrent: newData.hydration_current,
-              hydrationGoal: newData.hydration_goal,
+              activityMin: newData.activity_minutes,
+              mindMin: newData.mind_minutes,
+              hydrationCurrent: newData.hydration_liters,
+              hydrationGoal: 2.5,
             };
             setStats(newStats);
             localStorage.setItem(
@@ -193,13 +199,14 @@ export default function App() {
   const syncToSupabase = async (currentStats: UserStats, userId: string) => {
     if (isOffline) return;
 
+    const today = new Date().toISOString().split("T")[0];
     const upsertData = {
-      id: userId,
+      user_id: userId,
+      date: today,
       calories: currentStats.calories,
-      activity_min: currentStats.activityMin,
-      mind_min: currentStats.mindMin,
-      hydration_current: currentStats.hydrationCurrent,
-      hydration_goal: currentStats.hydrationGoal,
+      activity_minutes: currentStats.activityMin,
+      mind_minutes: currentStats.mindMin,
+      hydration_liters: currentStats.hydrationCurrent,
       updated_at: new Date(),
     };
 
@@ -301,7 +308,7 @@ export default function App() {
       case ScreenName.WORKOUT_DETAIL:
         return <WorkoutDetailView navigate={navigate} />;
       case ScreenName.NUTRITION:
-        return <NutritionView navigate={navigate} />;
+        return <NutritionView navigate={navigate} user={user} />;
       case ScreenName.HYDRATION:
         return (
           <HydrationView
@@ -318,6 +325,7 @@ export default function App() {
             navigate={navigate}
             toggleDarkMode={() => setDarkMode(!darkMode)}
             onLogout={handleLogout}
+            user={user}
           />
         );
       case ScreenName.HEALTH:
@@ -360,9 +368,8 @@ export default function App() {
         <OfflineStatusBadge variant="banner" />
 
         <main
-          className={`flex-1 flex flex-col bg-white dark:bg-background-dark transition-smooth ${
-            !hideBottomNav ? "pb-20 md:pb-6" : ""
-          }`}
+          className={`flex-1 flex flex-col bg-white dark:bg-background-dark transition-smooth ${!hideBottomNav ? "pb-20 md:pb-6" : ""
+            }`}
         >
           {renderScreen()}
         </main>

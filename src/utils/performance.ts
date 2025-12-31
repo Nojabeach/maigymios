@@ -8,12 +8,12 @@ export function initPerformanceMonitoring() {
     try {
       const observer = new PerformanceObserver((entryList) => {
         for (const entry of entryList.getEntries()) {
-          console.log("LCP:", (entry as any).startTime);
+          if (import.meta.env.DEV) console.log("LCP:", (entry as any).startTime);
         }
       });
       observer.observe({ entryTypes: ["largest-contentful-paint"] });
     } catch (e) {
-      console.log("LCP not supported");
+      if (import.meta.env.DEV) console.log("LCP not supported");
     }
   }
 
@@ -22,12 +22,12 @@ export function initPerformanceMonitoring() {
     const fidObserver = new PerformanceObserver((list) => {
       const entries = list.getEntries();
       entries.forEach((entry: any) => {
-        console.log("FID:", entry.processingDuration);
+        if (import.meta.env.DEV) console.log("FID:", entry.processingDuration);
       });
     });
     fidObserver.observe({ entryTypes: ["first-input"] });
   } catch (e) {
-    console.log("FID observer not supported");
+    if (import.meta.env.DEV) console.log("FID observer not supported");
   }
 
   // Cumulative Layout Shift
@@ -38,13 +38,13 @@ export function initPerformanceMonitoring() {
       entries.forEach((entry: any) => {
         if (!entry.hadRecentInput) {
           clsValue += entry.value;
-          console.log("CLS:", clsValue);
+          if (import.meta.env.DEV) console.log("CLS:", clsValue);
         }
       });
     });
     clsObserver.observe({ entryTypes: ["layout-shift"] });
   } catch (e) {
-    console.log("CLS observer not supported");
+    if (import.meta.env.DEV) console.log("CLS observer not supported");
   }
 }
 

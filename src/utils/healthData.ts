@@ -41,13 +41,13 @@ export interface WorkoutData {
   id: string;
   date: string;
   type:
-    | "running"
-    | "walking"
-    | "cycling"
-    | "gym"
-    | "swimming"
-    | "yoga"
-    | "other";
+  | "running"
+  | "walking"
+  | "cycling"
+  | "gym"
+  | "swimming"
+  | "yoga"
+  | "other";
   duration: number; // minutes
   calories: number;
   distance?: number; // km
@@ -55,131 +55,18 @@ export interface WorkoutData {
   intensity: "light" | "moderate" | "vigorous";
 }
 
+// Supabase import
+import { supabase } from "../supabaseClient";
+
 // Mock data for development
-const generateMockHealthData = (): HealthDataPoint[] => {
-  const data: HealthDataPoint[] = [];
-  const today = new Date();
 
-  for (let i = 6; i >= 0; i--) {
-    const date = new Date(today);
-    date.setDate(date.getDate() - i);
-    const dateStr = date.toLocaleDateString("es-ES", {
-      weekday: "short",
-      month: "short",
-      day: "numeric",
-    });
+// Generators removed
 
-    data.push({
-      date: dateStr,
-      timestamp: date.getTime(),
-      value: Math.floor(Math.random() * (12000 - 5000) + 5000), // 5k-12k steps
-      unit: "steps",
-      source: "Apple Health",
-    });
-  }
-
-  return data;
-};
-
-const generateMockHeartRateData = (): HealthDataPoint[] => {
-  const data: HealthDataPoint[] = [];
-  const today = new Date();
-
-  for (let i = 6; i >= 0; i--) {
-    const date = new Date(today);
-    date.setDate(date.getDate() - i);
-    const dateStr = date.toLocaleDateString("es-ES", {
-      weekday: "short",
-      month: "short",
-      day: "numeric",
-    });
-
-    data.push({
-      date: dateStr,
-      timestamp: date.getTime(),
-      value: Math.floor(Math.random() * (95 - 60) + 60), // 60-95 bpm
-      unit: "bpm",
-      source: "Apple Health",
-    });
-  }
-
-  return data;
-};
-
-const generateMockSleepData = (): HealthDataPoint[] => {
-  const data: HealthDataPoint[] = [];
-  const today = new Date();
-
-  for (let i = 6; i >= 0; i--) {
-    const date = new Date(today);
-    date.setDate(date.getDate() - i);
-    const dateStr = date.toLocaleDateString("es-ES", {
-      weekday: "short",
-      month: "short",
-      day: "numeric",
-    });
-
-    data.push({
-      date: dateStr,
-      timestamp: date.getTime(),
-      value: Math.floor(Math.random() * (9 - 6) + 6), // 6-9 hours
-      unit: "hours",
-      source: "Apple Health",
-    });
-  }
-
-  return data;
-};
-
-const generateMockWorkouts = (): WorkoutData[] => {
-  const workoutTypes: WorkoutData["type"][] = [
-    "running",
-    "walking",
-    "cycling",
-    "gym",
-    "yoga",
-  ];
-  const intensities: WorkoutData["intensity"][] = [
-    "light",
-    "moderate",
-    "vigorous",
-  ];
-  const data: WorkoutData[] = [];
-  const today = new Date();
-
-  for (let i = 0; i < 10; i++) {
-    const date = new Date(today);
-    date.setDate(date.getDate() - Math.floor(Math.random() * 30));
-
-    const type = workoutTypes[Math.floor(Math.random() * workoutTypes.length)];
-    const intensity =
-      intensities[Math.floor(Math.random() * intensities.length)];
-    const duration = Math.floor(Math.random() * (60 - 20) + 20); // 20-60 min
-
-    data.push({
-      id: `workout-${i}`,
-      date: date.toLocaleDateString("es-ES"),
-      type,
-      duration,
-      calories: Math.floor(duration * (intensity === "vigorous" ? 12 : 8)),
-      distance:
-        type !== "gym" && type !== "yoga" ? Math.random() * 10 : undefined,
-      heartRate: Math.floor(Math.random() * (180 - 120) + 120),
-      intensity,
-    });
-  }
-
-  return data.sort(
-    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-  );
-};
 
 class HealthDataService {
+  /* eslint-disable @typescript-eslint/no-explicit-any */
   private isNative = Capacitor.isNativePlatform();
-  private mockSteps = generateMockHealthData();
-  private mockHeartRate = generateMockHeartRateData();
-  private mockSleep = generateMockSleepData();
-  private mockWorkouts = generateMockWorkouts();
+
 
   /**
    * Initialize HealthKit access on iOS
@@ -210,8 +97,26 @@ class HealthDataService {
       }
     }
 
-    // Return mock data for development
-    return this.mockSteps.slice(-days);
+    // Supabase implementation
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+
+    const { data } = await supabase
+      .from('health_data')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('metric_type', 'steps')
+      .gte('date', new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString())
+      .order('date', { ascending: true });
+
+    // Map to HealthDataPoint
+    return (data || []).map((d: any) => ({
+      date: new Date(d.date).toLocaleDateString("es-ES", { weekday: "short", month: "short", day: "numeric" }),
+      timestamp: new Date(d.date).getTime(),
+      value: d.value,
+      unit: d.unit,
+      source: "Supabase"
+    }));
   }
 
   /**
@@ -228,7 +133,25 @@ class HealthDataService {
       }
     }
 
-    return this.mockHeartRate.slice(-days);
+    // Supabase implementation
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+
+    const { data } = await supabase
+      .from('health_data')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('metric_type', 'heart_rate')
+      .gte('date', new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString())
+      .order('date');
+
+    return (data || []).map((d: any) => ({
+      date: new Date(d.date).toLocaleDateString("es-ES", { weekday: "short", month: "short", day: "numeric" }),
+      timestamp: new Date(d.date).getTime(),
+      value: d.value,
+      unit: d.unit,
+      source: "Supabase"
+    }));
   }
 
   /**
@@ -245,7 +168,25 @@ class HealthDataService {
       }
     }
 
-    return this.mockSleep.slice(-days);
+    // Supabase implementation
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+
+    const { data } = await supabase
+      .from('health_data')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('metric_type', 'sleep')
+      .gte('date', new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString())
+      .order('date');
+
+    return (data || []).map((d: any) => ({
+      date: new Date(d.date).toLocaleDateString("es-ES", { weekday: "short", month: "short", day: "numeric" }),
+      timestamp: new Date(d.date).getTime(),
+      value: d.value,
+      unit: d.unit,
+      source: "Supabase"
+    }));
   }
 
   /**
@@ -262,30 +203,54 @@ class HealthDataService {
       }
     }
 
-    return this.mockWorkouts;
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+
+    const { data } = await supabase
+      .from('workouts')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('date', { ascending: false })
+      .limit(30);
+
+    return (data || []).map((d: any) => ({
+      id: d.id,
+      date: new Date(d.date).toLocaleDateString("es-ES"),
+      type: d.exercise_name as any || "other",
+      duration: d.duration_minutes,
+      calories: d.calories_burned,
+      intensity: d.intensity || "moderate"
+    }));
   }
 
   /**
    * Get today's health summary
    */
   async getTodaySummary(): Promise<HealthSummary> {
-    const today = new Date().toLocaleDateString();
+    const stepsData = await this.getSteps(1);
+    const heartRateData = await this.getHeartRate(1);
+    const sleepData = await this.getSleep(1);
+    const workoutsData = await this.getWorkouts(1);
+
+    const latestSteps = stepsData.length > 0 ? stepsData[stepsData.length - 1].value : 0;
+    const latestHeartRate = heartRateData.length > 0 ? heartRateData[heartRateData.length - 1].value : 70;
+    const latestSleep = sleepData.length > 0 ? sleepData[sleepData.length - 1].value : 0;
+
+    // Calculate workout minutes for today
+    const workoutMinutes = workoutsData.reduce((sum, w) => sum + w.duration, 0);
 
     return {
-      steps: this.mockSteps[this.mockSteps.length - 1]?.value || 8500,
-      activeEnergy: Math.floor(Math.random() * (500 - 200) + 200),
-      distance: Math.random() * (10 - 3) + 3,
-      heartRate: this.mockHeartRate[this.mockHeartRate.length - 1]?.value || 72,
+      steps: latestSteps,
+      activeEnergy: Math.floor(latestSteps * 0.04), // Estimación simple
+      distance: parseFloat((latestSteps * 0.00076).toFixed(2)), // Estimación km
+      heartRate: latestHeartRate,
       bloodPressure: {
-        systolic: Math.floor(Math.random() * (140 - 110) + 110),
-        diastolic: Math.floor(Math.random() * (90 - 70) + 70),
+        systolic: 120, // Default for now
+        diastolic: 80,
       },
-      bloodGlucose: Math.floor(Math.random() * (140 - 80) + 80),
-      workoutMinutes:
-        this.mockWorkouts
-          .filter((w) => w.date === today)
-          .reduce((sum, w) => sum + w.duration, 0) || 0,
-      sleep: this.mockSleep[this.mockSleep.length - 1]?.value || 7.5,
+      bloodGlucose: 90, // Default
+      workoutMinutes: workoutMinutes,
+      sleep: latestSleep,
     };
   }
 

@@ -1,22 +1,64 @@
 import React, { useState } from 'react';
 import { ScreenName } from '../types';
 import { IMAGES } from '../constants';
+import { supabase } from '../supabaseClient';
 
 interface NutritionProps {
   navigate: (screen: ScreenName) => void;
+  user?: any;
 }
 
-const NutritionView: React.FC<NutritionProps> = ({ navigate }) => {
+const NutritionView: React.FC<NutritionProps> = ({ navigate, user }) => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [newMeal, setNewMeal] = useState('');
+  const [calories, setCalories] = useState('');
+  const [time, setTime] = useState('');
+  const [meals, setMeals] = useState<any[]>([]);
 
-  const handleAddMeal = (e: React.FormEvent) => {
+  // Load meals on mount
+  React.useEffect(() => {
+    if (user?.id) {
+      loadMeals();
+    }
+  }, [user]);
+
+  const loadMeals = async () => {
+    const today = new Date().toISOString().split('T')[0];
+    const { data } = await supabase
+      .from('meals')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('date', today)
+      .order('created_at', { ascending: true });
+
+    if (data) setMeals(data);
+  };
+
+  const handleAddMeal = async (e: React.FormEvent) => {
     e.preventDefault();
-    if(newMeal.trim()) {
+    if (newMeal.trim() && user?.id) {
+      const today = new Date().toISOString().split('T')[0];
+
+      const { error } = await supabase.from('meals').insert({
+        user_id: user.id,
+        name: newMeal,
+        calories: parseInt(calories) || 0,
+        date: today,
+        meal_type: 'snack', // Defaulting to snack for now, logic can be improved
+        proteins: 0,
+        carbs: 0,
+        fats: 0
+      });
+
+      if (!error) {
         setShowAddModal(false);
         setNewMeal('');
-        // Here you would normally update stats state, but for demo UI we just close
-        alert("¡Comida registrada con éxito!");
+        setCalories('');
+        loadMeals(); // Reload list
+      } else {
+        console.error(error);
+        alert("Error al guardar comida");
+      }
     }
   };
 
@@ -24,7 +66,7 @@ const NutritionView: React.FC<NutritionProps> = ({ navigate }) => {
     <>
       <header className="sticky top-0 z-40 bg-background-light/95 dark:bg-background-dark/95 backdrop-blur-md px-4 py-3 flex items-center justify-between border-b border-gray-100 dark:border-gray-800">
         <div className="flex items-center gap-3">
-          <button 
+          <button
             className="flex items-center justify-center p-2 rounded-full hover:bg-gray-100 dark:hover:bg-surface-dark transition-colors"
             onClick={() => navigate(ScreenName.HOME)}
           >
@@ -39,7 +81,7 @@ const NutritionView: React.FC<NutritionProps> = ({ navigate }) => {
 
       <div className="flex flex-col gap-6 p-4 animate-fade-in">
         {/* Fasting Window Widget */}
-        <section 
+        <section
           className="bg-surface-light dark:bg-surface-dark rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-800 flex items-center gap-4 cursor-pointer active:scale-[0.99] transition-transform"
           onClick={() => navigate(ScreenName.FASTING)}
         >
@@ -103,8 +145,8 @@ const NutritionView: React.FC<NutritionProps> = ({ navigate }) => {
 
         {/* AI Dietitian Card */}
         <section className="relative overflow-hidden rounded-2xl bg-surface-dark shadow-md group cursor-pointer" onClick={() => navigate(ScreenName.CHAT)}>
-          <div className="absolute inset-0 z-0 bg-cover bg-center opacity-80 mix-blend-overlay transition-transform duration-700 group-hover:scale-105" 
-               style={{ backgroundImage: `url("${IMAGES.AI_DIET}")` }}></div>
+          <div className="absolute inset-0 z-0 bg-cover bg-center opacity-80 mix-blend-overlay transition-transform duration-700 group-hover:scale-105"
+            style={{ backgroundImage: `url("${IMAGES.AI_DIET}")` }}></div>
           <div className="absolute inset-0 z-10 bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div>
           <div className="relative z-20 p-5 pt-32 flex flex-col gap-3">
             <div className="flex items-center gap-2 mb-1">
@@ -131,39 +173,34 @@ const NutritionView: React.FC<NutritionProps> = ({ navigate }) => {
             </button>
           </div>
           <div className="flex flex-col gap-3">
-            {/* Breakfast (Done) */}
-            <div className="bg-surface-light dark:bg-surface-dark rounded-xl p-4 flex items-center gap-4 shadow-sm border-l-4 border-primary">
-              <div className="flex flex-col items-center gap-1 min-w-[50px]">
-                <span className="text-xs font-bold text-text-sub dark:text-gray-400">08:00</span>
-                <span className="material-symbols-outlined filled text-primary text-xl">check_circle</span>
+            {meals.length === 0 ? (
+              <div className="p-4 text-center text-text-sub dark:text-gray-400">
+                No hay comidas registradas hoy
               </div>
-              <div className="flex-1">
-                <p className="text-sm font-bold text-text-sub dark:text-gray-400 uppercase text-[10px] tracking-wide">Desayuno</p>
-                <p className="font-bold text-base line-through opacity-60">Avena con bayas y nueces</p>
-                <p className="text-xs text-text-sub dark:text-gray-400 mt-0.5">320 Kcal • Registrado</p>
-              </div>
-            </div>
-            
-            {/* Lunch (Current) */}
-            <div className="bg-surface-light dark:bg-surface-dark rounded-xl p-4 flex items-center gap-4 shadow-md border border-primary/30 ring-1 ring-primary/20">
-              <div className="flex flex-col items-center gap-1 min-w-[50px]">
-                <span className="text-xs font-bold text-text-main dark:text-white">13:00</span>
-                <div className="h-5 w-5 rounded-full border-2 border-primary bg-primary/20 animate-pulse"></div>
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-bold text-primary uppercase text-[10px] tracking-wide">Almuerzo</p>
-                <p className="font-bold text-base">Ensalada de Pollo a la plancha</p>
-                <p className="text-xs text-text-sub dark:text-gray-400 mt-0.5">Sugerido: 450 Kcal</p>
-              </div>
-              <button className="bg-primary hover:bg-green-400 text-black h-10 w-10 rounded-full flex items-center justify-center transition-colors shadow-lg shadow-green-500/20 active:scale-95">
-                <span className="material-symbols-outlined">add</span>
-              </button>
-            </div>
+            ) : (
+              meals.map((meal) => (
+                <div key={meal.id} className="bg-surface-light dark:bg-surface-dark rounded-xl p-4 flex items-center gap-4 shadow-sm border-l-4 border-primary">
+                  <div className="flex flex-col items-center gap-1 min-w-[50px]">
+                    <span className="text-xs font-bold text-text-sub dark:text-gray-400">
+                      {new Date(meal.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                    <span className="material-symbols-outlined filled text-primary text-xl">check_circle</span>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-bold text-text-sub dark:text-gray-400 uppercase text-[10px] tracking-wide">
+                      {meal.meal_type || 'Snack'}
+                    </p>
+                    <p className="font-bold text-base">{meal.name}</p>
+                    <p className="text-xs text-text-sub dark:text-gray-400 mt-0.5">{meal.calories} Kcal • Registrado</p>
+                  </div>
+                </div>
+              ))
+            )}
 
             {/* Add Extra Snack Button */}
-            <button 
-                onClick={() => setShowAddModal(true)}
-                className="mt-2 w-full py-4 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl text-text-sub dark:text-gray-400 font-bold text-sm flex items-center justify-center gap-2 hover:border-primary hover:text-primary transition-colors active:bg-gray-50 dark:active:bg-gray-800"
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="mt-2 w-full py-4 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl text-text-sub dark:text-gray-400 font-bold text-sm flex items-center justify-center gap-2 hover:border-primary hover:text-primary transition-colors active:bg-gray-50 dark:active:bg-gray-800"
             >
               <span className="material-symbols-outlined">add_circle</span>
               Registrar Snack
@@ -175,56 +212,59 @@ const NutritionView: React.FC<NutritionProps> = ({ navigate }) => {
       {/* Add Meal Modal */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fade-in">
-            <div className="bg-white dark:bg-surface-dark w-full max-w-md rounded-3xl p-6 shadow-2xl animate-slide-up">
-                <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-xl font-bold dark:text-white">Registrar Comida</h3>
-                    <button 
-                        onClick={() => setShowAddModal(false)}
-                        className="bg-gray-100 dark:bg-gray-700 p-2 rounded-full hover:bg-gray-200 transition-colors"
-                    >
-                        <span className="material-symbols-outlined dark:text-white">close</span>
-                    </button>
-                </div>
-                
-                <form onSubmit={handleAddMeal} className="flex flex-col gap-4">
-                    <div>
-                        <label className="text-xs font-bold uppercase tracking-wider text-text-sub dark:text-gray-400 ml-1">¿Qué comiste?</label>
-                        <input 
-                            autoFocus
-                            value={newMeal}
-                            onChange={(e) => setNewMeal(e.target.value)}
-                            placeholder="Ej. Manzana y almendras"
-                            className="w-full mt-1 bg-gray-50 dark:bg-black/20 border border-gray-200 dark:border-gray-700 rounded-xl p-4 text-lg focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
-                        />
-                    </div>
-                    
-                    <div className="flex gap-3">
-                         <div className="flex-1">
-                            <label className="text-xs font-bold uppercase tracking-wider text-text-sub dark:text-gray-400 ml-1">Calorías (aprox)</label>
-                            <input 
-                                type="number"
-                                placeholder="150"
-                                className="w-full mt-1 bg-gray-50 dark:bg-black/20 border border-gray-200 dark:border-gray-700 rounded-xl p-4 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
-                            />
-                         </div>
-                         <div className="flex-1">
-                            <label className="text-xs font-bold uppercase tracking-wider text-text-sub dark:text-gray-400 ml-1">Hora</label>
-                            <input 
-                                type="time"
-                                defaultValue="16:30"
-                                className="w-full mt-1 bg-gray-50 dark:bg-black/20 border border-gray-200 dark:border-gray-700 rounded-xl p-4 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
-                            />
-                         </div>
-                    </div>
-
-                    <button 
-                        type="submit"
-                        className="w-full mt-2 bg-primary text-black font-bold py-4 rounded-xl hover:bg-primary-dark transition-colors shadow-lg shadow-primary/20"
-                    >
-                        Guardar Snack
-                    </button>
-                </form>
+          <div className="bg-white dark:bg-surface-dark w-full max-w-md rounded-3xl p-6 shadow-2xl animate-slide-up">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold dark:text-white">Registrar Comida</h3>
+              <button
+                onClick={() => setShowAddModal(false)}
+                className="bg-gray-100 dark:bg-gray-700 p-2 rounded-full hover:bg-gray-200 transition-colors"
+              >
+                <span className="material-symbols-outlined dark:text-white">close</span>
+              </button>
             </div>
+
+            <form onSubmit={handleAddMeal} className="flex flex-col gap-4">
+              <div>
+                <label className="text-xs font-bold uppercase tracking-wider text-text-sub dark:text-gray-400 ml-1">¿Qué comiste?</label>
+                <input
+                  autoFocus
+                  value={newMeal}
+                  onChange={(e) => setNewMeal(e.target.value)}
+                  placeholder="Ej. Manzana y almendras"
+                  className="w-full mt-1 bg-gray-50 dark:bg-black/20 border border-gray-200 dark:border-gray-700 rounded-xl p-4 text-lg focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+                />
+              </div>
+
+              <div className="flex gap-3">
+                <div className="flex-1">
+                  <label className="text-xs font-bold uppercase tracking-wider text-text-sub dark:text-gray-400 ml-1">Calorías (aprox)</label>
+                  <input
+                    type="number"
+                    placeholder="150"
+                    value={calories}
+                    onChange={(e) => setCalories(e.target.value)}
+                    className="w-full mt-1 bg-gray-50 dark:bg-black/20 border border-gray-200 dark:border-gray-700 rounded-xl p-4 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+                  />
+                </div>
+                <div className="flex-1">
+                  <label className="text-xs font-bold uppercase tracking-wider text-text-sub dark:text-gray-400 ml-1">Hora</label>
+                  <input
+                    type="time"
+                    value={time}
+                    onChange={(e) => setTime(e.target.value)}
+                    className="w-full mt-1 bg-gray-50 dark:bg-black/20 border border-gray-200 dark:border-gray-700 rounded-xl p-4 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                className="w-full mt-2 bg-primary text-black font-bold py-4 rounded-xl hover:bg-primary-dark transition-colors shadow-lg shadow-primary/20"
+              >
+                Guardar Snack
+              </button>
+            </form>
+          </div>
         </div>
       )}
 

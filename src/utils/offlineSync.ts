@@ -40,7 +40,7 @@ class OfflineSyncService {
 
       request.onsuccess = () => {
         this.db = request.result;
-        console.log("IndexedDB initialized successfully");
+        if (import.meta.env.DEV) console.log("IndexedDB initialized successfully");
         this.setupOnlineStatusListener();
         this.loadSyncQueue();
         resolve();
@@ -83,7 +83,7 @@ class OfflineSyncService {
           db.createObjectStore("cache", { keyPath: "key" });
         }
 
-        console.log("IndexedDB schema created");
+        if (import.meta.env.DEV) console.log("IndexedDB schema created");
       };
     });
   }
@@ -94,13 +94,13 @@ class OfflineSyncService {
   private setupOnlineStatusListener(): void {
     window.addEventListener("online", () => {
       this.isOnline = true;
-      console.log("Connection restored - starting sync");
+      if (import.meta.env.DEV) console.log("Connection restored - starting sync");
       this.syncPendingOperations();
     });
 
     window.addEventListener("offline", () => {
       this.isOnline = false;
-      console.log("Connection lost - switching to offline mode");
+      if (import.meta.env.DEV) console.log("Connection lost - switching to offline mode");
     });
   }
 
@@ -209,7 +209,7 @@ class OfflineSyncService {
     try {
       const operations = await this.getAllLocal<SyncOperation>("syncQueue");
       this.syncQueue = operations.filter((op) => op.status === "pending");
-      console.log(`Loaded ${this.syncQueue.length} pending sync operations`);
+      if (import.meta.env.DEV) console.log(`Loaded ${this.syncQueue.length} pending sync operations`);
     } catch (error) {
       console.error("Failed to load sync queue:", error);
     }
@@ -221,7 +221,7 @@ class OfflineSyncService {
   async syncPendingOperations(): Promise<void> {
     if (!this.isOnline || this.syncQueue.length === 0) return;
 
-    console.log(`Starting sync of ${this.syncQueue.length} pending operations`);
+    if (import.meta.env.DEV) console.log(`Starting sync of ${this.syncQueue.length} pending operations`);
 
     for (const operation of this.syncQueue) {
       try {
@@ -312,7 +312,7 @@ class OfflineSyncService {
         }
       }
 
-      console.log("Expired cache entries cleared");
+      if (import.meta.env.DEV) console.log("Expired cache entries cleared");
     } catch (error) {
       console.error("Failed to clear cache:", error);
     }
@@ -334,7 +334,7 @@ class OfflineSyncService {
    * Force sync
    */
   async forceSync(): Promise<void> {
-    console.log("Force syncing all pending operations");
+    if (import.meta.env.DEV) console.log("Force syncing all pending operations");
     await this.syncPendingOperations();
   }
 
@@ -368,7 +368,7 @@ class OfflineSyncService {
       }
     }
 
-    console.log("All local data cleared");
+    if (import.meta.env.DEV) console.log("All local data cleared");
   }
 }
 

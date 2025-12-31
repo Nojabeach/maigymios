@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { ScreenName, type UserStats } from "../types";
 import { IMAGES } from "../constants";
+import { supabase } from "../supabaseClient";
 
 interface HomeProps {
   stats: UserStats;
@@ -9,6 +10,8 @@ interface HomeProps {
 
 const HomeView: React.FC<HomeProps> = ({ stats, navigate }) => {
   const [greeting, setGreeting] = useState("Buenos días");
+  const [fastingSession, setFastingSession] = useState<any>(null);
+  const [fastingElapsed, setFastingElapsed] = useState({ h: 0, m: 0, s: 0 });
 
   useEffect(() => {
     const hour = new Date().getHours();
@@ -16,6 +19,60 @@ const HomeView: React.FC<HomeProps> = ({ stats, navigate }) => {
     else if (hour < 20) setGreeting("Buenas tardes");
     else setGreeting("Buenas noches");
   }, []);
+
+  // Load Fasting Session
+  useEffect(() => {
+    const loadFasting = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase
+        .from("fasting_sessions")
+        .select("*")
+        .eq("user_id", user.id)
+        .is("end_time", null)
+        .order("start_time", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (data) {
+        setFastingSession(data);
+      }
+    };
+    loadFasting();
+    const interval = setInterval(loadFasting, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Timer Tick
+  useEffect(() => {
+    let interval: any;
+    if (fastingSession) {
+      const updateTimer = () => {
+        const start = new Date(fastingSession.start_time).getTime();
+        const now = new Date().getTime();
+        const diff = now - start;
+        const h = Math.floor(diff / (1000 * 60 * 60));
+        const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const s = Math.floor((diff % (1000 * 60)) / 1000);
+        setFastingElapsed({ h, m, s });
+      };
+      updateTimer();
+      interval = setInterval(updateTimer, 1000);
+    } else {
+      setFastingElapsed({ h: 0, m: 0, s: 0 });
+    }
+    return () => clearInterval(interval);
+  }, [fastingSession]);
+
+  // Calculations
+  const activityGoal = 60; // Minutes
+  const progressPercentage = Math.min(100, Math.round((stats.activityMin / activityGoal) * 100));
+  const circleCircumference = 552;
+  const strokeDashoffset = circleCircumference - (progressPercentage / 100) * circleCircumference;
+
+  const hydrationPercentage = stats.hydrationGoal > 0 ? (stats.hydrationCurrent / stats.hydrationGoal) * 100 : 0;
+  const dropletsCount = 5;
+  const activeDroplets = Math.floor((hydrationPercentage / 100) * dropletsCount);
 
   return (
     <>
@@ -85,8 +142,8 @@ const HomeView: React.FC<HomeProps> = ({ stats, navigate }) => {
                   fill="transparent"
                   r="88"
                   stroke="#22c55e"
-                  strokeDasharray="552"
-                  strokeDashoffset="193"
+                  strokeDasharray={circleCircumference}
+                  strokeDashoffset={strokeDashoffset}
                   strokeLinecap="round"
                   strokeWidth="12"
                   className="transition-all duration-1000 ease-out"
@@ -94,7 +151,7 @@ const HomeView: React.FC<HomeProps> = ({ stats, navigate }) => {
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
                 <span className="text-5xl font-extrabold tracking-tighter dark:text-white">
-                  65<span className="text-2xl">%</span>
+                  {progressPercentage}<span className="text-2xl">%</span>
                 </span>
                 <span className="text-sm text-text-sub dark:text-gray-400 font-medium bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-md mt-1">
                   Completado
@@ -177,15 +234,14 @@ const HomeView: React.FC<HomeProps> = ({ stats, navigate }) => {
                 <div className="w-full bg-gray-200 dark:bg-gray-700 h-1.5 rounded-full mt-2">
                   <div
                     className="bg-blue-400 h-1.5 rounded-full relative overflow-hidden"
-                    style={{ width: "75%" }}
+                    style={{ width: `${hydrationPercentage}%` }}
                   >
-                    <div className="absolute inset-0 bg-white/30 w-full animate-pulse"></div>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="group flex items-center gap-3 p-3 bg-white dark:bg-black/20 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm cursor-pointer hover:border-primary/50 transition-all active:scale-[0.99]">
+            <div className="group flex items-center gap-3 p-3 bg-white dark:bg-black/20 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm cursor-pointer hover:border-primary/50 transition-all active:scale-[0.99]" onClick={() => navigate(ScreenName.CHALLENGES)}>
               <div className="bg-orange-100 dark:bg-orange-900/30 p-2.5 rounded-full text-orange-500">
                 <span className="material-symbols-outlined">
                   directions_walk
@@ -194,26 +250,18 @@ const HomeView: React.FC<HomeProps> = ({ stats, navigate }) => {
               <div className="flex-1">
                 <div className="flex justify-between items-start">
                   <h4 className="font-bold text-sm dark:text-white">
-                    Caminata Power
+                    Desafíos Activos
                   </h4>
                   <span className="text-xs font-bold text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full flex items-center gap-0.5">
                     <span className="material-symbols-outlined text-[10px] filled">
                       bolt
                     </span>
-                    100 pts
+                    Ver todos
                   </span>
                 </div>
                 <p className="text-xs text-text-sub dark:text-gray-400 mt-1">
-                  5,000 pasos antes de cenar
+                  Completa tus retos diarios
                 </p>
-                <div className="mt-2 flex items-center gap-2">
-                  <span className="text-xs font-bold text-primary hover:underline flex items-center gap-1">
-                    ¡Acepto el reto!{" "}
-                    <span className="material-symbols-outlined text-[10px]">
-                      arrow_forward
-                    </span>
-                  </span>
-                </div>
               </div>
             </div>
           </div>
@@ -230,17 +278,22 @@ const HomeView: React.FC<HomeProps> = ({ stats, navigate }) => {
                 timer
               </span>
               <h4 className="font-bold text-base dark:text-white">
-                Ayuno 16:8
+                {fastingSession ? `Ayuno ${fastingSession.protocol || '16:8'}` : 'Ayuno Intermitente'}
               </h4>
             </div>
             <p className="text-sm text-text-sub dark:text-gray-400">
-              En ventana de ayuno
+              {fastingSession ? "En ventana de ayuno" : "No has iniciado ayuno"}
             </p>
             <p className="text-xl font-bold font-display mt-1 dark:text-white tabular-nums tracking-tight">
-              02:30:15{" "}
-              <span className="text-xs font-normal text-text-sub dark:text-gray-400">
-                restantes
-              </span>
+              {fastingSession
+                ? `${String(fastingElapsed.h).padStart(2, '0')}:${String(fastingElapsed.m).padStart(2, '0')}:${String(fastingElapsed.s).padStart(2, '0')}`
+                : "Iniciar Ahora"
+              }
+              {fastingSession &&
+                <span className="text-xs font-normal text-text-sub dark:text-gray-400 ml-1">
+                  tiempo
+                </span>
+              }
             </p>
           </div>
           <div className="relative w-16 h-16 shrink-0">
@@ -254,21 +307,24 @@ const HomeView: React.FC<HomeProps> = ({ stats, navigate }) => {
                 stroke="currentColor"
                 strokeWidth="6"
               ></circle>
-              <circle
-                cx="32"
-                cy="32"
-                fill="transparent"
-                r="28"
-                stroke="#22c55e"
-                strokeDasharray="175"
-                strokeDashoffset="40"
-                strokeLinecap="round"
-                strokeWidth="6"
-              ></circle>
+              {fastingSession &&
+                <circle
+                  cx="32"
+                  cy="32"
+                  fill="transparent"
+                  r="28"
+                  stroke="#22c55e"
+                  strokeDasharray="175"
+                  strokeDashoffset={175 - (175 * 0.2)} // Mock slight progress for visual
+                  strokeLinecap="round"
+                  strokeWidth="6"
+                  className="animate-pulse"
+                ></circle>
+              }
             </svg>
             <div className="absolute inset-0 flex items-center justify-center">
-              <span className="material-symbols-outlined text-lg text-primary animate-pulse">
-                bolt
+              <span className={`material-symbols-outlined text-lg ${fastingSession ? "text-primary animate-pulse" : "text-gray-400 text-3xl"}`}>
+                {fastingSession ? "bolt" : "play_arrow"}
               </span>
             </div>
           </div>
@@ -384,27 +440,18 @@ const HomeView: React.FC<HomeProps> = ({ stats, navigate }) => {
           {/* Water Droplets Visual */}
           <div className="flex justify-between items-center gap-2 px-1 mb-2">
             {[...Array(5)].map((_, i) => {
-              const active = i < 3;
-              const next = i === 3;
+              const active = i < activeDroplets; // Dynamic based on %
               return (
                 <button
                   key={i}
-                  className={`flex-1 aspect-[2/3] rounded-full flex items-center justify-center transition-all ${
-                    active
+                  className={`flex-1 aspect-[2/3] rounded-full flex items-center justify-center transition-all ${active
                       ? "bg-blue-400 text-white shadow-sm hover:scale-105"
-                      : next
-                      ? "bg-blue-100 dark:bg-gray-800 border-2 border-dashed border-blue-300 dark:border-gray-600 text-blue-300 hover:bg-blue-50"
                       : "bg-gray-100 dark:bg-gray-800 opacity-50"
-                  }`}
+                    }`}
                 >
                   {active && (
                     <span className="material-symbols-outlined text-sm font-bold">
                       check
-                    </span>
-                  )}
-                  {next && (
-                    <span className="material-symbols-outlined text-sm">
-                      add
                     </span>
                   )}
                 </button>
@@ -412,7 +459,9 @@ const HomeView: React.FC<HomeProps> = ({ stats, navigate }) => {
             })}
           </div>
           <p className="text-xs text-center text-text-sub dark:text-gray-500 mt-2">
-            ¡Buen trabajo! Solo faltan 2 vasos para tu meta.
+            {(stats.hydrationGoal - stats.hydrationCurrent) > 0
+              ? `Faltan ${(stats.hydrationGoal - stats.hydrationCurrent).toFixed(1)}L para tu meta.`
+              : "¡Meta diaria cumplida! 🎉"}
           </p>
         </section>
       </div>

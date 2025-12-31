@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { GoogleGenAI } from "@google/genai";
 import { ScreenName } from "../types";
 import { IMAGES } from "../constants";
+import { supabase } from "../supabaseClient";
 
 interface ChatProps {
   navigate: (screen: ScreenName) => void;
@@ -15,32 +16,72 @@ interface Message {
 }
 
 const ChatView: React.FC<ChatProps> = ({ navigate }) => {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "1",
-      text: "¡Hola Maria! 👋 Soy tu entrenadora Vitality. Veo tus estadísticas de hoy. ¿En qué puedo ayudarte?",
-      sender: "ai",
-      time: new Date().toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-    },
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Load History
+  useEffect(() => {
+    const loadHistory = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data } = await supabase
+        .from("chat_messages")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: true })
+        .limit(50);
+
+      if (data && data.length > 0) {
+        const history: Message[] = data.map((msg: any) => ({
+          id: msg.id,
+          text: msg.content,
+          sender: msg.role === "assistant" ? "ai" : "user",
+          time: new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        }));
+        setMessages(history);
+      } else {
+        // Default welcome message if no history
+        setMessages([{
+          id: "1",
+          text: "¡Hola Maria! 👋 Soy tu entrenadora Vitality. Veo tus estadísticas de hoy. ¿En qué puedo ayudarte?",
+          sender: "ai",
+          time: new Date().toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+        }]);
+      }
+    };
+    loadHistory();
+  }, []);
 
   // Auto-scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  const saveMessage = async (text: string, role: 'user' | 'assistant') => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    await supabase.from("chat_messages").insert({
+      user_id: user.id,
+      content: text,
+      role: role,
+      created_at: new Date().toISOString()
+    });
+  };
+
   const handleSendMessage = async () => {
     if (!inputText.trim()) return;
 
+    const userText = inputText;
     const userMsg: Message = {
       id: Date.now().toString(),
-      text: inputText,
+      text: userText,
       sender: "user",
       time: new Date().toLocaleTimeString([], {
         hour: "2-digit",
@@ -51,6 +92,9 @@ const ChatView: React.FC<ChatProps> = ({ navigate }) => {
     setMessages((prev) => [...prev, userMsg]);
     setInputText("");
     setIsLoading(true);
+
+    // Save User Message
+    saveMessage(userText, 'user').catch(console.error);
 
     try {
       // 1. Get User Stats from LocalStorage to give context to AI
@@ -91,7 +135,7 @@ const ChatView: React.FC<ChatProps> = ({ navigate }) => {
             role: m.sender === "user" ? "user" : "model",
             parts: [{ text: m.text }],
           })),
-          { role: "user", parts: [{ text: inputText }] },
+          { role: "user", parts: [{ text: userText }] },
         ],
         config: {
           systemInstruction: systemInstruction,
@@ -113,6 +157,9 @@ const ChatView: React.FC<ChatProps> = ({ navigate }) => {
       };
 
       setMessages((prev) => [...prev, aiMsg]);
+      // Save AI Message
+      saveMessage(aiText, 'assistant').catch(console.error);
+
     } catch (error) {
       console.error("Gemini Error:", error);
       const errorMsg: Message = {
@@ -169,9 +216,8 @@ const ChatView: React.FC<ChatProps> = ({ navigate }) => {
         {messages.map((msg) => (
           <div
             key={msg.id}
-            className={`flex items-end gap-3 ${
-              msg.sender === "user" ? "justify-end" : ""
-            }`}
+            className={`flex items-end gap-3 ${msg.sender === "user" ? "justify-end" : ""
+              }`}
           >
             {msg.sender === "ai" && (
               <div
@@ -181,9 +227,8 @@ const ChatView: React.FC<ChatProps> = ({ navigate }) => {
             )}
 
             <div
-              className={`flex flex-col gap-1 max-w-[85%] ${
-                msg.sender === "user" ? "items-end" : ""
-              }`}
+              className={`flex flex-col gap-1 max-w-[85%] ${msg.sender === "user" ? "items-end" : ""
+                }`}
             >
               {msg.sender === "ai" && (
                 <span className="text-xs text-gray-500 dark:text-gray-400 ml-1">
@@ -192,11 +237,10 @@ const ChatView: React.FC<ChatProps> = ({ navigate }) => {
               )}
 
               <div
-                className={`p-4 shadow-sm text-[15px] leading-relaxed ${
-                  msg.sender === "user"
+                className={`p-4 shadow-sm text-[15px] leading-relaxed ${msg.sender === "user"
                     ? "rounded-2xl rounded-tr-none bg-primary text-[#102210] font-medium"
                     : "rounded-2xl rounded-tl-none bg-white dark:bg-surface-dark border border-gray-100 dark:border-gray-800"
-                }`}
+                  }`}
               >
                 {msg.text}
               </div>
@@ -245,11 +289,10 @@ const ChatView: React.FC<ChatProps> = ({ navigate }) => {
             />
           </div>
           <button
-            className={`flex items-center justify-center size-10 rounded-full transition-colors shrink-0 shadow-sm ${
-              inputText.trim()
+            className={`flex items-center justify-center size-10 rounded-full transition-colors shrink-0 shadow-sm ${inputText.trim()
                 ? "bg-primary text-[#102210] hover:bg-green-400"
                 : "bg-gray-200 dark:bg-gray-700 text-gray-400"
-            }`}
+              }`}
             onClick={handleSendMessage}
             disabled={!inputText.trim() || isLoading}
           >
