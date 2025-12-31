@@ -8,17 +8,23 @@ interface SettingsProps {
 const SettingsView: React.FC<SettingsProps> = ({ navigate }) => {
   const [hydrationReminder, setHydrationReminder] = useState(() => localStorage.getItem("setting_hydrationReminder") !== "false");
   const [workoutReminder, setWorkoutReminder] = useState(() => localStorage.getItem("setting_workoutReminder") === "true");
+  const [mfaEnabled, setMfaEnabled] = useState(() => localStorage.getItem("setting_mfa") === "true");
+  const [captchaEnabled, setCaptchaEnabled] = useState(() => localStorage.getItem("setting_captcha") === "true");
+
 
   useEffect(() => {
-    localStorage.setItem("setting_hydrationReminder", String(hydrationReminder));
-  }, [hydrationReminder]);
+    localStorage.setItem("setting_mfa", String(mfaEnabled));
+  }, [mfaEnabled]);
 
   useEffect(() => {
-    localStorage.setItem("setting_workoutReminder", String(workoutReminder));
-  }, [workoutReminder]);
+    localStorage.setItem("setting_captcha", String(captchaEnabled));
+  }, [captchaEnabled]);
 
   const toggleHydration = () => setHydrationReminder(!hydrationReminder);
   const toggleWorkout = () => setWorkoutReminder(!workoutReminder);
+  const toggleMfa = () => setMfaEnabled(!mfaEnabled);
+  const toggleCaptcha = () => setCaptchaEnabled(!captchaEnabled);
+
 
   return (
     <div className="flex-1 bg-white dark:bg-slate-950 flex flex-col min-h-screen">
@@ -66,6 +72,43 @@ const SettingsView: React.FC<SettingsProps> = ({ navigate }) => {
             </div>
           </div>
         </section>
+
+        {/* Security Section */}
+        <section>
+          <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-4">Seguridad Avanzada</h3>
+          <div className="card-premium overflow-hidden border-none p-0 divide-y divide-slate-100 dark:divide-slate-800/50">
+            <div className="flex items-center justify-between p-5 group cursor-pointer" onClick={toggleMfa}>
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-2xl bg-purple-50 dark:bg-purple-900/30 text-purple-500 flex items-center justify-center">
+                  <span className="material-symbols-outlined filled">verified_user</span>
+                </div>
+                <div>
+                  <p className="font-black text-slate-900 dark:text-white leading-none">Doble Factor (MFA)</p>
+                  <p className="text-[10px] text-slate-400 mt-1">Extra seguridad por SMS o App</p>
+                </div>
+              </div>
+              <div className={`w-12 h-6 rounded-full p-1 transition-colors duration-300 ${mfaEnabled ? 'bg-primary-500' : 'bg-slate-200 dark:bg-slate-800'}`}>
+                <div className={`w-4 h-4 rounded-full bg-white shadow-md transition-transform duration-300 ${mfaEnabled ? 'translate-x-6' : 'translate-x-0'}`}></div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between p-5 group cursor-pointer" onClick={toggleCaptcha}>
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-2xl bg-orange-50 dark:bg-orange-900/30 text-orange-500 flex items-center justify-center">
+                  <span className="material-symbols-outlined filled">security</span>
+                </div>
+                <div>
+                  <p className="font-black text-slate-900 dark:text-white leading-none">Bot Protection</p>
+                  <p className="text-[10px] text-slate-400 mt-1">ReCaptcha en accesos sensibles</p>
+                </div>
+              </div>
+              <div className={`w-12 h-6 rounded-full p-1 transition-colors duration-300 ${captchaEnabled ? 'bg-primary-500' : 'bg-slate-200 dark:bg-slate-800'}`}>
+                <div className={`w-4 h-4 rounded-full bg-white shadow-md transition-transform duration-300 ${captchaEnabled ? 'translate-x-6' : 'translate-x-0'}`}></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
 
         {/* Account Section */}
         <section>
