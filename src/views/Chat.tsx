@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import React, { useState, useEffect, useRef } from "react";
+
 import { ScreenName } from "../types";
 import { IMAGES } from "../constants";
 import { supabase } from "../supabaseClient";
@@ -213,21 +213,18 @@ const ChatView: React.FC<ChatProps> = ({ navigate, user }) => {
         {messages.map((msg) => (
           <div
             key={msg.id}
-            className={`flex w-full ${
-              msg.sender === "user" ? "justify-end" : "justify-start"
-            }`}
+            className={`flex w-full ${msg.sender === "user" ? "justify-end" : "justify-start"
+              }`}
           >
             <div
-              className={`max-w-[85%] flex flex-col ${
-                msg.sender === "user" ? "items-end" : "items-start"
-              }`}
+              className={`max-w-[85%] flex flex-col ${msg.sender === "user" ? "items-end" : "items-start"
+                }`}
             >
               <div
-                className={`p-4 rounded-[1.5rem] text-[15px] font-medium leading-relaxed shadow-soft ${
-                  msg.sender === "user"
+                className={`p-4 rounded-[1.5rem] text-[15px] font-medium leading-relaxed shadow-soft ${msg.sender === "user"
                     ? "bg-primary-500 text-white rounded-tr-none"
                     : "bg-white dark:bg-slate-900 text-slate-900 dark:text-white border border-slate-100 dark:border-slate-800 rounded-tl-none"
-                }`}
+                  }`}
               >
                 {msg.text}
               </div>
@@ -267,11 +264,10 @@ const ChatView: React.FC<ChatProps> = ({ navigate, user }) => {
           <button
             onClick={handleSendMessage}
             disabled={!inputText.trim() || isLoading}
-            className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
-              inputText.trim()
+            className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${inputText.trim()
                 ? "bg-primary-500 text-white shadow-lg shadow-primary-500/30 scale-100"
                 : "text-slate-300 scale-90"
-            }`}
+              }`}
           >
             <span className="material-symbols-outlined text-[20px] ml-0.5">
               send

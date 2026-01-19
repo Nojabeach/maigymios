@@ -115,7 +115,7 @@ export function scheduleNotification(
 /**
  * Cancelar notificación agendada
  */
-export function cancelScheduledNotification(timeoutId: NodeJS.Timeout) {
+export function cancelScheduledNotification(timeoutId: ReturnType<typeof setTimeout>) {
   clearTimeout(timeoutId);
 }
 
@@ -144,7 +144,7 @@ export function scheduleRecurringNotifications(
  * Cancelar notificaciones recurrentes
  */
 export function cancelRecurringNotifications(
-  intervalId: NodeJS.Timer | ReturnType<typeof setInterval>
+  intervalId: ReturnType<typeof setInterval>
 ) {
   clearInterval(intervalId as any);
 }

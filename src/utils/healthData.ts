@@ -5,15 +5,8 @@
  */
 
 // Capacitor import - will be available when building for native platforms
-let Capacitor: any;
-try {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const CapacitorModule = require("@capacitor/core");
-  Capacitor = CapacitorModule.Capacitor;
-} catch {
-  // Not available in web environment
-  Capacitor = { isNativePlatform: () => false };
-}
+// Capacitor import - placeholder for PWA
+const Capacitor = { isNativePlatform: () => false };
 
 export interface HealthDataPoint {
   date: string;
