@@ -15,6 +15,8 @@ const HomeView: React.FC<HomeProps> = ({ stats, navigate, user }) => {
   const [greeting, setGreeting] = useState("Buenos días");
   const [fastingSession, setFastingSession] = useState<any>(null);
   const [fastingElapsed, setFastingElapsed] = useState({ h: 0, m: 0, s: 0 });
+  const [featuredWorkout, setFeaturedWorkout] = useState<any>(null);
+  const [featuredMeal, setFeaturedMeal] = useState<any>(null);
 
   useEffect(() => {
     const hour = new Date().getHours();
@@ -43,7 +45,34 @@ const HomeView: React.FC<HomeProps> = ({ stats, navigate, user }) => {
         setFastingSession(data);
       }
     };
+
+    const loadFeatured = async () => {
+      // Dynamic Workout
+      const { data: exercises } = await supabase
+        .from('exercises')
+        .select('*')
+        .limit(10);
+
+      if (exercises && exercises.length > 0) {
+        const random = exercises[Math.floor(Math.random() * exercises.length)];
+        setFeaturedWorkout(random);
+      }
+
+      // Dynamic Meal (From history or suggestion)
+      const { data: meals } = await supabase
+        .from('meals')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(3); // Get recent 3
+
+      if (meals && meals.length > 0) {
+        // Suggest the last meal or a random one from history
+        setFeaturedMeal(meals[0]);
+      }
+    };
+
     loadFasting();
+    loadFeatured();
     const interval = setInterval(loadFasting, 60000);
     return () => clearInterval(interval);
   }, []);
@@ -70,7 +99,7 @@ const HomeView: React.FC<HomeProps> = ({ stats, navigate, user }) => {
   }, [fastingSession]);
 
   // Calculations
-  const activityGoal = 60; // Minutes
+  const activityGoal = user?.user_metadata?.activity_goal || 60; // Minutes
   const progressPercentage = Math.min(
     100,
     Math.round((stats.activityMin / activityGoal) * 100)
@@ -248,18 +277,18 @@ const HomeView: React.FC<HomeProps> = ({ stats, navigate, user }) => {
             className="relative rounded-3xl overflow-hidden h-40 shadow-soft group cursor-pointer active:scale-[0.98] transition-all"
             onClick={() => navigate(ScreenName.WORKOUT)}
           >
-            <img src={IMAGES.WORKOUT_YOGA} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt="Yoga" />
+            <img src={featuredWorkout?.image_url || IMAGES.WORKOUT_YOGA} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt="Workout" />
             <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/20 to-transparent p-5 flex flex-col justify-end">
-              <span className="text-[10px] font-black text-primary-400 uppercase tracking-widest mb-1">Nivel Intermedio</span>
-              <h4 className="text-xl font-black text-white leading-none">Fuerza en casa</h4>
+              <span className="text-[10px] font-black text-primary-400 uppercase tracking-widest mb-1">{featuredWorkout?.category || 'General'}</span>
+              <h4 className="text-xl font-black text-white leading-none">{featuredWorkout?.name || 'Entrenamiento del día'}</h4>
               <div className="flex gap-4 mt-2">
                 <div className="flex items-center gap-1 text-white/70 text-xs">
                   <span className="material-symbols-outlined text-sm">schedule</span>
-                  20 min
+                  {featuredWorkout?.duration_minutes || 20} min
                 </div>
                 <div className="flex items-center gap-1 text-white/70 text-xs">
                   <span className="material-symbols-outlined text-sm">bolt</span>
-                  350 kcal
+                  {featuredWorkout?.calories_burn || 150} kcal
                 </div>
               </div>
             </div>
@@ -276,16 +305,18 @@ const HomeView: React.FC<HomeProps> = ({ stats, navigate, user }) => {
             className="card-premium p-4 flex gap-4 cursor-pointer active:scale-[0.98] transition-all"
             onClick={() => navigate(ScreenName.NUTRITION)}
           >
-            <img src={IMAGES.MEAL_SALAD} className="w-20 h-20 rounded-2xl object-cover shadow-sm" alt="Salad" />
+            <img src={IMAGES.MEAL_SALAD} className="w-20 h-20 rounded-2xl object-cover shadow-sm" alt="Meal" />
             <div className="flex-1 py-1 flex flex-col justify-between">
               <div>
-                <h4 className="font-black text-base text-slate-900 dark:text-white">Ensalada César Fit</h4>
-                <p className="text-xs text-slate-400 font-medium">Equilibrio perfecto de macros</p>
+                <h4 className="font-black text-base text-slate-900 dark:text-white">{featuredMeal?.name || 'Registrar comida'}</h4>
+                <p className="text-xs text-slate-400 font-medium">{featuredMeal ? 'Basado en tu historial' : 'Mantén tu registro al día'}</p>
               </div>
-              <div className="flex items-center gap-3">
-                <span className="text-[11px] font-black text-orange-500 bg-orange-500/10 px-2 py-0.5 rounded-md">Proteína 25g</span>
-                <span className="text-[11px] font-black text-slate-400">450 kcal</span>
-              </div>
+              {featuredMeal && (
+                <div className="flex items-center gap-3">
+                  <span className="text-[11px] font-black text-orange-500 bg-orange-500/10 px-2 py-0.5 rounded-md">Proteína {featuredMeal.proteins || 0}g</span>
+                  <span className="text-[11px] font-black text-slate-400">{featuredMeal.calories || 0} kcal</span>
+                </div>
+              )}
             </div>
           </div>
         </section>

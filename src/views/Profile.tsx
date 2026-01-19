@@ -26,6 +26,8 @@ const ProfileView: React.FC<ProfileProps> = ({
   const [weeklyProgressData, setWeeklyProgressData] = useState<any[]>([]);
   const [caloriesData, setCaloriesData] = useState<any[]>([]);
   const [hydrationData, setHydrationData] = useState<any[]>([]);
+  const [weightHistory, setWeightHistory] = useState<any[]>([]);
+  const [weightDiff, setWeightDiff] = useState<number>(0);
 
   // Profile Edit State
   const [isEditing, setIsEditing] = useState(false);
@@ -46,11 +48,13 @@ const ProfileView: React.FC<ProfileProps> = ({
         .from("user_stats")
         .select("*")
         .eq("user_id", user.id)
-        .gte("date", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
+        .gte("date", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
         .order("date", { ascending: true });
 
       if (stats) {
-        const mapData = (key: string) => stats.map(s => ({
+        // Last 7 days for small charts
+        const last7Days = stats.slice(-7);
+        const mapData = (key: string) => last7Days.map(s => ({
           date: new Date(s.date).toLocaleDateString("es-ES", { weekday: "short" }),
           value: s[key] || 0
         }));
@@ -58,6 +62,21 @@ const ProfileView: React.FC<ProfileProps> = ({
         setWeeklyProgressData(mapData("activity_minutes"));
         setCaloriesData(mapData("calories"));
         setHydrationData(mapData("hydration_liters"));
+
+        // Weight History (Last 30 days or available)
+        // Filter out entries with no weight or 0
+        const weights = stats.filter(s => s.weight && s.weight > 0).map(s => ({
+          val: s.weight,
+          day: new Date(s.date).toLocaleDateString("es-ES", { weekday: "short" }).substring(0, 1).toUpperCase()
+        }));
+        setWeightHistory(weights.slice(-7)); // Show last 7 data points in the modal chart
+
+        // Calculate diff (Oldest vs Newest in the 30 day window)
+        if (weights.length > 1) {
+          const first = weights[0].val;
+          const last = weights[weights.length - 1].val;
+          setWeightDiff(parseFloat((first - last).toFixed(1)));
+        }
       }
     };
     loadCharts();
@@ -295,16 +314,18 @@ const ProfileView: React.FC<ProfileProps> = ({
             </div>
 
             <div className="h-48 flex items-end justify-between gap-3 mb-10 px-2 group">
-              {[72, 71.5, 71, 70.2, 69.8, 69, 68.5].map((val, i) => (
+              {weightHistory.length > 0 ? weightHistory.map((item, i) => (
                 <div key={i} className="flex-1 flex flex-col items-center gap-3">
-                  <div className="w-full bg-primary-500/10 rounded-2xl relative transition-all group-hover:bg-primary-500/30" style={{ height: `${((val - 65) / 10) * 100}%` }}>
+                  <div className="w-full bg-primary-500/10 rounded-2xl relative transition-all group-hover:bg-primary-500/30" style={{ height: `${((item.val - (Math.min(...weightHistory.map(w => w.val)) - 2)) / 5) * 60}%`, minHeight: '10%' }}>
                     <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[10px] font-black py-1.5 px-3 rounded-xl opacity-0 hover:opacity-100 transition-opacity">
-                      {val}kg
+                      {item.val}kg
                     </div>
                   </div>
-                  <span className="text-[10px] font-black text-slate-400 tracking-tighter">{['L', 'M', 'X', 'J', 'V', 'S', 'D'][i]}</span>
+                  <span className="text-[10px] font-black text-slate-400 tracking-tighter">{item.day}</span>
                 </div>
-              ))}
+              )) : (
+                <p className="w-full text-center text-slate-400 font-bold text-xs">No hay historial suficiente</p>
+              )}
             </div>
 
             <div className="bg-primary-500/5 border border-primary-500/20 rounded-3xl p-6 flex items-center gap-4">
@@ -312,8 +333,8 @@ const ProfileView: React.FC<ProfileProps> = ({
                 <span className="material-symbols-outlined filled">trending_down</span>
               </div>
               <div>
-                <h4 className="font-black text-slate-900 dark:text-white">¡Vas por buen camino!</h4>
-                <p className="text-xs font-bold text-slate-400 mt-0.5">Bajaste 3.5kg en los últimos 30 días.</p>
+                <h4 className="font-black text-slate-900 dark:text-white">{weightDiff >= 0 ? '¡Vas por buen camino!' : '¡Sigue esforzándote!'}</h4>
+                <p className="text-xs font-bold text-slate-400 mt-0.5">{weightDiff > 0 ? `Bajaste ${weightDiff}kg en los últimos 30 días.` : weightDiff < 0 ? `Subiste ${Math.abs(weightDiff)}kg en los últimos 30 días.` : 'Mantienes tu peso estable.'}</p>
               </div>
             </div>
 

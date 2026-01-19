@@ -11,10 +11,13 @@ const WorkoutView: React.FC<WorkoutProps> = ({ navigate }) => {
   const [completedExercises, setCompletedExercises] = useState<Set<string>>(new Set());
   const [exercises, setExercises] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [featuredWorkout, setFeaturedWorkout] = useState<any>(null);
+  const [weeklyProgress, setWeeklyProgress] = useState(0);
 
   useEffect(() => {
     loadExercises();
     fetchCompletedWorkouts();
+    loadFeaturedAndProgress();
   }, []);
 
   const loadExercises = async () => {
@@ -53,6 +56,36 @@ const WorkoutView: React.FC<WorkoutProps> = ({ navigate }) => {
     } catch (error) {
       console.error(error);
     }
+  };
+
+  const loadFeaturedAndProgress = async () => {
+    // Featured
+    const { data: exercises } = await supabase
+      .from('exercises')
+      .select('*')
+      .limit(10);
+
+    if (exercises && exercises.length > 0) {
+      const random = exercises[Math.floor(Math.random() * exercises.length)];
+      setFeaturedWorkout(random);
+    }
+
+    // Weekly Progress
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const startOfWeek = new Date();
+    startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay() + 1); // Monday
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    const { count } = await supabase
+      .from('workouts')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .gte('date', startOfWeek.toISOString());
+
+    const goal = 4; // Default weekly goal
+    setWeeklyProgress(Math.min(100, Math.round(((count || 0) / goal) * 100)));
   };
 
   const toggleExercise = async (exercise: any) => {
@@ -104,13 +137,13 @@ const WorkoutView: React.FC<WorkoutProps> = ({ navigate }) => {
             className="relative rounded-[2.5rem] overflow-hidden group cursor-pointer active:scale-[0.98] transition-all h-[260px] shadow-strong"
             onClick={() => navigate(ScreenName.WORKOUT_DETAIL)}
           >
-            <img src={IMAGES.WORKOUT_HEADER} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000" alt="Workout" />
+            <img src={featuredWorkout?.image_url || IMAGES.WORKOUT_HEADER} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000" alt="Workout" />
             <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent p-8 flex flex-col justify-end">
               <div className="bg-primary-500 text-white text-[10px] font-black px-3 py-1 rounded-full w-fit mb-3">DESTACADO HOY</div>
-              <h3 className="text-2xl font-black text-white leading-tight mb-2">Movilidad Total y Fuerza</h3>
+              <h3 className="text-2xl font-black text-white leading-tight mb-2">{featuredWorkout?.name || 'Movilidad Total'}</h3>
               <div className="flex items-center gap-6 text-white/80 text-xs font-bold">
-                <span className="flex items-center gap-1.5"><span className="material-symbols-outlined text-sm">timer</span> 20 min</span>
-                <span className="flex items-center gap-1.5"><span className="material-symbols-outlined text-sm">fitness_center</span> Principiante</span>
+                <span className="flex items-center gap-1.5"><span className="material-symbols-outlined text-sm">timer</span> {featuredWorkout?.duration_minutes || 20} min</span>
+                <span className="flex items-center gap-1.5"><span className="material-symbols-outlined text-sm">fitness_center</span> {featuredWorkout?.category || 'General'}</span>
               </div>
             </div>
           </div>
@@ -181,8 +214,8 @@ const WorkoutView: React.FC<WorkoutProps> = ({ navigate }) => {
         {/* Motivation Card */}
         <section className="card-premium bg-slate-950 text-white p-6 relative overflow-hidden">
           <div className="relative z-10">
-            <h4 className="font-black text-lg mb-2">¡Sigue así!</h4>
-            <p className="text-sm text-slate-400 leading-relaxed mb-4">Has completado el 75% de tus entrenamientos semanales. Estás a muy poco de tu mejor racha.</p>
+            <h4 className="font-black text-lg mb-2">{weeklyProgress >= 100 ? '¡Objetivo Semanal Cumplido!' : '¡Sigue así!'}</h4>
+            <p className="text-sm text-slate-400 leading-relaxed mb-4">Has completado el {weeklyProgress}% de tus entrenamientos semanales. {weeklyProgress >= 100 ? 'Gran trabajo.' : 'Estás a muy poco de tu mejor racha.'}</p>
             <button className="text-primary-500 font-black text-xs uppercase tracking-widest flex items-center gap-2">
               Ver progreso semanal <span className="material-symbols-outlined text-sm">arrow_forward</span>
             </button>

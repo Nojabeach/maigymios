@@ -245,10 +245,10 @@ class HealthDataService {
       distance: parseFloat((latestSteps * 0.00076).toFixed(2)), // Estimación km
       heartRate: latestHeartRate,
       bloodPressure: {
-        systolic: 120, // Default for now
-        diastolic: 80,
+        systolic: 0,
+        diastolic: 0,
       },
-      bloodGlucose: 90, // Default
+      bloodGlucose: 0,
       workoutMinutes: workoutMinutes,
       sleep: latestSleep,
     };

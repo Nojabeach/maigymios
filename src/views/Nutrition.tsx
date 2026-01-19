@@ -14,6 +14,7 @@ const NutritionView: React.FC<NutritionProps> = ({ navigate, user }) => {
   const [calories, setCalories] = useState('');
   const [time, setTime] = useState('');
   const [meals, setMeals] = useState<any[]>([]);
+  const [aiSuggestion, setAiSuggestion] = useState('');
 
   useEffect(() => {
     if (user?.id) {
@@ -61,6 +62,22 @@ const NutritionView: React.FC<NutritionProps> = ({ navigate, user }) => {
   const totalCals = meals.reduce((acc, m) => acc + (m.calories || 0), 0);
   const targetCals = user?.user_metadata?.daily_calorie_target || 1800;
   const calPercentage = Math.min(100, Math.round((totalCals / targetCals) * 100));
+
+  useEffect(() => {
+    // Generate simple dynamic tip
+    const hour = new Date().getHours();
+    if (calPercentage >= 100) {
+      setAiSuggestion("¡Meta de calorías cumplida! Mantente hidratado el resto del día.");
+    } else if (calPercentage > 85) {
+      setAiSuggestion("Estás muy cerca de tu meta. Una cena ligera sería ideal.");
+    } else if (hour < 11 && calPercentage < 10) {
+      setAiSuggestion("El desayuno es clave. ¿Qué tal unos huevos o avena?");
+    } else if (meals.filter(m => m.meal_type === 'snack').length === 0) {
+      setAiSuggestion("¿Te falta energía? Un snack saludable te ayudará a seguir.");
+    } else {
+      setAiSuggestion("Vas bien. Recuerda incluir suficientes proteínas en tu próxima comida.");
+    }
+  }, [calPercentage, meals]);
 
   return (
     <div className="flex-1 bg-white dark:bg-slate-950 flex flex-col min-h-screen">
@@ -115,7 +132,7 @@ const NutritionView: React.FC<NutritionProps> = ({ navigate, user }) => {
               <span className="bg-primary-500 p-1 rounded-lg"><span className="material-symbols-outlined text-sm text-white">smart_toy</span></span>
               <span className="text-[10px] font-black text-primary-400 uppercase tracking-widest">Sugerencia IA</span>
             </div>
-            <h3 className="text-lg font-black text-white leading-tight">¿Te falta proteína? Un yogur griego sería ideal ahora.</h3>
+            <h3 className="text-lg font-black text-white leading-tight">{aiSuggestion}</h3>
           </div>
         </section>
 
